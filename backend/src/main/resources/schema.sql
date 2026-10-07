@@ -1,0 +1,2 @@
+-- PostgreSQL reference schema. Hibernate creates the same tables during development.
+-- Activate the postgres profile after creating the personnel_management database.
