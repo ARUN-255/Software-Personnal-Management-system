@@ -1,1 +1,11 @@
-package com.spms.repository;import org.springframework.data.jpa.repository.JpaRepository;import org.springframework.data.domain.*;import java.util.*;import java.time.*;import com.spms.entity.*; public interface PayrollRepository extends JpaRepository<PayrollRecord,UUID>{List<PayrollRecord> findByEmployeeIdOrderByPayPeriodDesc(UUID employeeId); List<PayrollRecord> findByEmployeeIdAndStatusOrderByPayPeriodDesc(UUID employeeId,PayrollRecord.Status status); Optional<PayrollRecord> findByEmployeeIdAndPayPeriod(UUID employeeId,LocalDate period);}
+package com.spms.repository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.*;
+import java.util.*;
+import java.time.*;
+import com.spms.entity.*;
+public interface PayrollRepository extends JpaRepository<PayrollRecord, UUID> {
+    List<PayrollRecord> findByEmployeeIdOrderByPayPeriodDesc(UUID employeeId);
+    List<PayrollRecord> findByEmployeeIdAndStatusOrderByPayPeriodDesc(UUID employeeId, PayrollRecord.Status status);
+    Optional<PayrollRecord> findByEmployeeIdAndPayPeriod(UUID employeeId, LocalDate period);
+}

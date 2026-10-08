@@ -1,1 +1,57 @@
-package com.spms.controller;import jakarta.validation.Valid;import lombok.RequiredArgsConstructor;import org.springframework.data.domain.Page;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;import com.spms.dto.Dtos;import com.spms.entity.*;import com.spms.repository.*;import com.spms.service.*;import java.util.*;@RestController @RequestMapping("/api/admin") @RequiredArgsConstructor public class AdminController{private final EmployeeService employees;private final AttendanceService attendance;private final PayrollService payroll;private final DepartmentRepository departments;private final DesignationRepository designations;@GetMapping("/employees")public Page<Employee> list(@RequestParam(defaultValue="")String q,@RequestParam(defaultValue="0")int page){return employees.list(q,page);}@GetMapping("/employees/{id}")public Employee get(@PathVariable UUID id){return employees.get(id);}@PostMapping("/employees")public Employee create(@Valid @RequestBody Dtos.EmployeeRequest r){return employees.create(r);}@PutMapping("/employees/{id}")public Employee update(@PathVariable UUID id,@Valid @RequestBody Dtos.EmployeeRequest r){return employees.update(id,r);}@PostMapping("/employees/{id}/deactivate")public void deactivate(@PathVariable UUID id){employees.deactivate(id);}@GetMapping("/employees/{id}/attendance")public List<AttendanceRecord> attendance(@PathVariable UUID id){return attendance.forEmployee(id);}@PutMapping("/employees/{id}/attendance")public AttendanceRecord attendance(@PathVariable UUID id,@Valid @RequestBody Dtos.AttendanceRequest r,Authentication a){return attendance.put(id,r,a.getName());}@GetMapping("/employees/{id}/payroll")public List<PayrollRecord> payroll(@PathVariable UUID id){return payroll.forEmployee(id,false);}@PostMapping("/employees/{id}/payroll")public PayrollRecord payroll(@PathVariable UUID id,@Valid @RequestBody Dtos.PayrollRequest r){return payroll.save(id,r);}@GetMapping("/departments")public List<Department> departments(){return departments.findAll();}@PostMapping("/departments")public Department addDepartment(@RequestBody Dtos.ReferenceRequest r){return departments.save(new Department(r.value()));}@GetMapping("/designations")public List<Designation> designations(){return designations.findAll();}@PostMapping("/designations")public Designation addDesignation(@RequestBody Dtos.ReferenceRequest r){return designations.save(new Designation(r.value()));}}
+package com.spms.controller;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import com.spms.dto.Dtos;
+import com.spms.entity.*;
+import com.spms.repository.*;
+import com.spms.service.*;
+import java.util.*;
+@RestController @RequestMapping("/api/admin") @RequiredArgsConstructor public class AdminController {
+    private final EmployeeService employees;
+    private final AttendanceService attendance;
+    private final PayrollService payroll;
+    private final DepartmentRepository departments;
+    private final DesignationRepository designations;
+    @GetMapping("/employees")public Page<Employee> list(@RequestParam(defaultValue="")String q, @RequestParam(defaultValue="0")int page) {
+        return employees.list(q, page);
+    }
+    @GetMapping("/employees/{id}")public Employee get(@PathVariable UUID id) {
+        return employees.get(id);
+    }
+    @PostMapping("/employees")public Employee create(@Valid @RequestBody Dtos.EmployeeRequest r) {
+        return employees.create(r);
+    }
+    @PutMapping("/employees/{id}")public Employee update(@PathVariable UUID id, @Valid @RequestBody Dtos.EmployeeRequest r) {
+        return employees.update(id, r);
+    }
+    @PostMapping("/employees/{id}/deactivate")public void deactivate(@PathVariable UUID id) {
+        employees.deactivate(id);
+    }
+    @GetMapping("/employees/{id}/attendance")public List<AttendanceRecord> attendance(@PathVariable UUID id) {
+        return attendance.forEmployee(id);
+    }
+    @PutMapping("/employees/{id}/attendance")public AttendanceRecord attendance(@PathVariable UUID id, @Valid @RequestBody Dtos.AttendanceRequest r, Authentication a) {
+        return attendance.put(id, r, a.getName());
+    }
+    @GetMapping("/employees/{id}/payroll")public List<PayrollRecord> payroll(@PathVariable UUID id) {
+        return payroll.forEmployee(id, false);
+    }
+    @PostMapping("/employees/{id}/payroll")public PayrollRecord payroll(@PathVariable UUID id, @Valid @RequestBody Dtos.PayrollRequest r) {
+        return payroll.save(id, r);
+    }
+    @GetMapping("/departments")public List<Department> departments() {
+        return departments.findAll();
+    }
+    @PostMapping("/departments")public Department addDepartment(@RequestBody Dtos.ReferenceRequest r) {
+        return departments.save(new Department(r.value()));
+    }
+    @GetMapping("/designations")public List<Designation> designations() {
+        return designations.findAll();
+    }
+    @PostMapping("/designations")public Designation addDesignation(@RequestBody Dtos.ReferenceRequest r) {
+        return designations.save(new Designation(r.value()));
+    }
+}

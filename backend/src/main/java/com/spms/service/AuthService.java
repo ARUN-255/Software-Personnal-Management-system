@@ -1,2 +1,29 @@
-package com.spms.service;import lombok.RequiredArgsConstructor;import org.springframework.security.authentication.*;import org.springframework.security.core.context.SecurityContextHolder;import org.springframework.security.crypto.password.PasswordEncoder;import org.springframework.stereotype.Service;import com.spms.dto.Dtos;import com.spms.repository.UserAccountRepository;import jakarta.servlet.http.*;import java.util.*;
-@Service @RequiredArgsConstructor public class AuthService{private final AuthenticationManager manager;private final UserAccountRepository users;private final PasswordEncoder encoder;public Map<String,Object> login(Dtos.LoginRequest r,HttpServletRequest req){var auth=manager.authenticate(new UsernamePasswordAuthenticationToken(r.username(),r.password()));SecurityContextHolder.getContext().setAuthentication(auth);req.getSession(true).setAttribute("SPRING_SECURITY_CONTEXT",SecurityContextHolder.getContext());var u=users.findByUsername(r.username()).orElseThrow();return Map.of("username",u.getUsername(),"role",u.getRole(),"mustChangePassword",u.isMustChangePassword());}public void change(String name,Dtos.ChangePasswordRequest r){var u=users.findByUsername(name).orElseThrow();if(!encoder.matches(r.currentPassword(),u.getPasswordHash()))throw new IllegalArgumentException("Current password is incorrect");u.setPasswordHash(encoder.encode(r.newPassword()));u.setMustChangePassword(false);users.save(u);}}
+package com.spms.service;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.*;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import com.spms.dto.Dtos;
+import com.spms.repository.UserAccountRepository;
+import jakarta.servlet.http.*;
+import java.util.*;
+@Service @RequiredArgsConstructor public class AuthService {
+    private final AuthenticationManager manager;
+    private final UserAccountRepository users;
+    private final PasswordEncoder encoder;
+    public Map<String, Object> login(Dtos.LoginRequest r, HttpServletRequest req) {
+        var auth=manager.authenticate(new UsernamePasswordAuthenticationToken(r.username(), r.password()));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        req.getSession(true).setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+        var u=users.findByUsername(r.username()).orElseThrow();
+        return Map.of("username", u.getUsername(), "role", u.getRole(), "mustChangePassword", u.isMustChangePassword());
+    }
+    public void change(String name, Dtos.ChangePasswordRequest r) {
+        var u=users.findByUsername(name).orElseThrow();
+        if(!encoder.matches(r.currentPassword(), u.getPasswordHash()))throw new IllegalArgumentException("Current password is incorrect");
+        u.setPasswordHash(encoder.encode(r.newPassword()));
+        u.setMustChangePassword(false);
+        users.save(u);
+    }
+}

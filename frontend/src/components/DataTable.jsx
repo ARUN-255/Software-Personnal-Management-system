@@ -1,1 +1,25 @@
-import EmptyState from'./EmptyState';export default function DataTable({columns,rows=[]}){if(!rows.length)return <EmptyState/>;return <div className="tablewrap"><table><thead><tr>{columns.map(c=><th key={c.key}>{c.label}</th>)}</tr></thead><tbody>{rows.map((r,i)=><tr key={r.id||i}>{columns.map(c=><td key={c.key}>{c.render?c.render(r):r[c.key]}</td>)}</tr>)}</tbody></table></div>}
+import EmptyState from './EmptyState';
+export default function DataTable({
+  columns,
+  rows = []
+}) {
+  if (!rows.length) return <EmptyState />;
+  return <div className="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          {columns.map(c => <th key={c.key}>
+            {c.label}
+          </th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r, i) => <tr key={r.id || i}>
+          {columns.map(c => <td key={c.key}>
+            {c.render ? c.render(r) : r[c.key]}
+          </td>)}
+        </tr>)}
+      </tbody>
+    </table>
+  </div>;
+}

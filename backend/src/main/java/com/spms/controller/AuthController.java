@@ -1,1 +1,25 @@
-package com.spms.controller;import jakarta.servlet.http.*;import jakarta.validation.Valid;import lombok.RequiredArgsConstructor;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;import com.spms.dto.Dtos;import com.spms.service.AuthService;import java.util.*;@RestController @RequestMapping("/api/auth") @RequiredArgsConstructor public class AuthController{private final AuthService auth;@PostMapping("/login")public Map<String,Object> login(@Valid @RequestBody Dtos.LoginRequest r,HttpServletRequest q){return auth.login(r,q);}@GetMapping("/session")public Map<String,Object> session(Authentication a){return Map.of("username",a.getName(),"role",a.getAuthorities().iterator().next().getAuthority().replace("ROLE_",""));}@PostMapping("/change-password")public void change(Authentication a,@Valid @RequestBody Dtos.ChangePasswordRequest r){auth.change(a.getName(),r);}@PostMapping("/logout")public void logout(HttpServletRequest r){var s=r.getSession(false);if(s!=null)s.invalidate();}}
+package com.spms.controller;
+import jakarta.servlet.http.*;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import com.spms.dto.Dtos;
+import com.spms.service.AuthService;
+import java.util.*;
+@RestController @RequestMapping("/api/auth") @RequiredArgsConstructor public class AuthController {
+    private final AuthService auth;
+    @PostMapping("/login")public Map<String, Object> login(@Valid @RequestBody Dtos.LoginRequest r, HttpServletRequest q) {
+        return auth.login(r, q);
+    }
+    @GetMapping("/session")public Map<String, Object> session(Authentication a) {
+        return Map.of("username", a.getName(), "role", a.getAuthorities().iterator().next().getAuthority().replace("ROLE_", ""));
+    }
+    @PostMapping("/change-password")public void change(Authentication a, @Valid @RequestBody Dtos.ChangePasswordRequest r) {
+        auth.change(a.getName(), r);
+    }
+    @PostMapping("/logout")public void logout(HttpServletRequest r) {
+        var s=r.getSession(false);
+        if(s!=null)s.invalidate();
+    }
+}

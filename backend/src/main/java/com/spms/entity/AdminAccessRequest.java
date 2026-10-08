@@ -1,1 +1,18 @@
-package com.spms.entity;import jakarta.persistence.*;import lombok.*;import java.time.*;import java.util.*;@Entity @Getter @Setter @NoArgsConstructor public class AdminAccessRequest{public enum Status{PENDING,APPROVED,REJECTED}@Id @GeneratedValue private UUID id;private String fullName;private String email;@Column(length=1000)private String reason;@Enumerated(EnumType.STRING)private Status status=Status.PENDING;private LocalDateTime requestedAt=LocalDateTime.now();@ManyToOne private UserAccount reviewedBy;private LocalDateTime reviewedAt;}
+package com.spms.entity;
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.*;
+import java.util.*;
+@Entity @Getter @Setter @NoArgsConstructor public class AdminAccessRequest {
+    public enum Status {
+        PENDING, APPROVED, REJECTED
+    }
+    @Id @GeneratedValue private UUID id;
+    private String fullName;
+    private String email;
+    @Column(length=1000)private String reason;
+    @Enumerated(EnumType.STRING)private Status status=Status.PENDING;
+    private LocalDateTime requestedAt=LocalDateTime.now();
+    @ManyToOne private UserAccount reviewedBy;
+    private LocalDateTime reviewedAt;
+}

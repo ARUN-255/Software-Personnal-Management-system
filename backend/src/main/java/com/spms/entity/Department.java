@@ -1,1 +1,11 @@
-package com.spms.entity; import jakarta.persistence.*;import lombok.*;import java.util.*; @Entity @Getter @Setter @NoArgsConstructor public class Department{@Id @GeneratedValue private UUID id;@Column(unique=true,nullable=false)private String name;public Department(String n){name=n;}}
+package com.spms.entity;
+import jakarta.persistence.*;
+import lombok.*;
+import java.util.*;
+@Entity @Getter @Setter @NoArgsConstructor public class Department {
+    @Id @GeneratedValue private UUID id;
+    @Column(unique=true, nullable=false)private String name;
+    public Department(String n) {
+        name=n;
+    }
+}
