@@ -17,6 +17,33 @@ jobs:
           cache: maven
       - run: mvn -B test package
         working-directory: backend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test dependencies
+        working-directory: frontend
+        run: |
+          npm ci
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Browser workflow smoke test
+        env:
+          APP_DEMO_DATA: 'true'
+          FRONTEND_URL: http://127.0.0.1:5173
+          VITE_API_URL: http://127.0.0.1:8080/api
+        run: |
+          java -jar backend/target/personnel-management-1.0.0.jar > /tmp/personnel-backend.log 2>&1 &
+          npm --prefix frontend run dev -- --host 127.0.0.1 > /tmp/personnel-frontend.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/api/auth/csrf > /dev/null && curl -fsS http://127.0.0.1:5173 > /dev/null; then break; fi
+            sleep 1
+          done
+          node frontend/tests/smoke.mjs
+      - name: Startup logs on failure
+        if: failure()
+        run: |
+          tail -n 100 /tmp/personnel-backend.log || true
+          tail -n 40 /tmp/personnel-frontend.log || true
   frontend:
     runs-on: ubuntu-latest
     steps:

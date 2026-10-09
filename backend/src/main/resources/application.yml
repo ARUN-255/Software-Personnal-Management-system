@@ -8,6 +8,9 @@ server:
         secure: ${COOKIE_SECURE:false}
         same-site: lax
 spring:
+  sql:
+    init:
+      mode: never
   datasource:
     url: jdbc:h2:file:./data/personnel;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
     username: sa
