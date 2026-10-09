@@ -1,0 +1,33 @@
+services:
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: personnel_management
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Fill DB_PASSWORD in backend/.env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d personnel_management']
+      interval: 5s
+      timeout: 5s
+      retries: 15
+  backend:
+    build: ./backend
+    env_file: backend/.env
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      DB_URL: jdbc:postgresql://database:5432/personnel_management
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8088}
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
+  frontend:
+    build: ./frontend
+    ports: ['8088:80']
+    depends_on: [backend]
+volumes:
+  postgres-data:
+  uploads:

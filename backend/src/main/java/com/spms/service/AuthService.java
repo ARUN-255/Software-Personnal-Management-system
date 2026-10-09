@@ -14,6 +14,7 @@ import java.util.*;
     private final PasswordEncoder encoder;
     public Map<String, Object> login(Dtos.LoginRequest r, HttpServletRequest req) {
         var auth=manager.authenticate(new UsernamePasswordAuthenticationToken(r.username(), r.password()));
+        if (req.getSession(false) != null) req.changeSessionId();
         SecurityContextHolder.getContext().setAuthentication(auth);
         req.getSession(true).setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
         var u=users.findByUsername(r.username()).orElseThrow();

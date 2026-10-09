@@ -9,6 +9,9 @@ import com.spms.service.AuthService;
 import java.util.*;
 @RestController @RequestMapping("/api/auth") @RequiredArgsConstructor public class AuthController {
     private final AuthService auth;
+    @GetMapping("/csrf") public Map<String, String> csrf(org.springframework.security.web.csrf.CsrfToken token) {
+        return Map.of("token", token.getToken());
+    }
     @PostMapping("/login")public Map<String, Object> login(@Valid @RequestBody Dtos.LoginRequest r, HttpServletRequest q) {
         return auth.login(r, q);
     }

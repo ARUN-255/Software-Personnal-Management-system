@@ -22,7 +22,10 @@ import java.util.*;
     @GetMapping("/api/owner/admin-access-requests")public List<AdminAccessRequest> list() {
         return requests.findAllByOrderByRequestedAtDesc();
     }
-    @PostMapping("/api/owner/admin-access-requests/{id}/{decision}")public AdminAccessRequest decide(@PathVariable UUID id, @PathVariable String decision, @RequestParam(required=false)String username, @RequestParam(required=false)String temporaryPassword, Authentication a) {
+    @org.springframework.transaction.annotation.Transactional
+    @PostMapping("/api/owner/admin-access-requests/{id}/{decision}")public AdminAccessRequest decide(@PathVariable UUID id, @PathVariable String decision, @RequestBody(required=false) Map<String, String> credentials, Authentication a) {
+        String username = credentials == null ? null : credentials.get("username");
+        String temporaryPassword = credentials == null ? null : credentials.get("temporaryPassword");
         var r=requests.findById(id).orElseThrow();
         if(r.getStatus()!=AdminAccessRequest.Status.PENDING)throw new IllegalArgumentException("Request already reviewed");
         r.setReviewedBy(users.findByUsername(a.getName()).orElseThrow());

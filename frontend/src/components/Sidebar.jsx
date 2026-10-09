@@ -8,6 +8,8 @@ export default function Sidebar() {
     } = useAuth(),
     nav = useNavigate();
   let links = user?.role === 'EMPLOYEE' ? [['/employee', 'My dashboard', LayoutDashboard]] : user?.role === 'OWNER' ? [['/owner', 'Access requests', ShieldCheck]] : [['/admin', 'Dashboard', LayoutDashboard], ['/admin/employees', 'Employees', Users]];
+  if (user?.role !== 'OWNER') links.push(['/workspace', 'People workspace', LayoutDashboard]);
+  links.push(['/account', 'Account security', ShieldCheck]);
   return <aside className="side">
     <div className="brand">
       <b>Bronzera Labs</b>

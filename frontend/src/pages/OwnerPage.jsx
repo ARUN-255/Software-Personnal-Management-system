@@ -16,19 +16,20 @@ export default function OwnerPage() {
     load();
   }, []);
   async function act(x, decision) {
-    let tail = '';
+    let credentials = {};
     if (decision === 'approve') {
       const username = prompt('Enter a NEW admin username');
       if (!username) return;
       const password = prompt('Enter a temporary password (minimum 8 characters)');
       if (!password) return;
-      tail = `?username=${encodeURIComponent(username)}&temporaryPassword=${encodeURIComponent(password)}`;
+      credentials = { username, temporaryPassword: password };
     }
     setBusy(true);
     setMessage(null);
     try {
-      await api(`/owner/admin-access-requests/${x.id}/${decision}${tail}`, {
-        method: 'POST'
+      await api(`/owner/admin-access-requests/${x.id}/${decision}`, {
+        method: 'POST',
+        body: JSON.stringify(credentials)
       });
       setMessage({
         type: 'success',

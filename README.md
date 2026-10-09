@@ -1,3 +1,5 @@
+> Cloud, AI and workspace upgrade: see [UPGRADE_SETUP.md](UPGRADE_SETUP.md) for the current setup, API-key placeholders and new features. Demo accounts are now disabled by default; use your existing login or configure the initial owner for an empty database.
+
 # Software Personnel Management System
 
 A complete academic full-stack employee portal with separate Admin, Owner and Employee experiences.

@@ -15,5 +15,8 @@ import java.util.*;
     @Column(name="work_date")private LocalDate workDate;
     @Enumerated(EnumType.STRING)private Status status;
     private String remarks;
+    private LocalDateTime checkedInAt;
+    private LocalDateTime checkedOutAt;
+    @Version private Long version;
     @ManyToOne private UserAccount updatedBy;
 }

@@ -6,3 +6,9 @@ backend/uploads/
 .vscode/
 *.log
 .env
+
+**/application-local.properties
+**/application-local.yml
+**/.env*
+!**/.env.example
+backend/data/

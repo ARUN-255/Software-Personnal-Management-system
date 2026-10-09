@@ -1,9 +1,11 @@
 server:
   port: 8080
+  forward-headers-strategy: framework
   servlet:
     session:
       cookie:
         http-only: true
+        secure: ${COOKIE_SECURE:false}
         same-site: lax
 spring:
   datasource:
@@ -19,6 +21,18 @@ spring:
       max-file-size: 5MB
       max-request-size: 5MB
 app:
+  demo-data: ${APP_DEMO_DATA:false}
+  time-zone: ${APP_TIME_ZONE:Asia/Kolkata}
+  bootstrap:
+    owner-username: ${BOOTSTRAP_OWNER_USERNAME:owner}
+    owner-password: ${BOOTSTRAP_OWNER_PASSWORD:}
+  storage:
+    provider: ${STORAGE_PROVIDER:local}
+    bucket: ${AWS_S3_BUCKET:}
+    region: ${AWS_REGION:ap-south-1}
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:}
   upload-dir: ${APP_UPLOAD_DIR:uploads}
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
 ---

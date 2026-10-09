@@ -9,9 +9,11 @@ import java.util.*;
 @Service @RequiredArgsConstructor public class PayrollService {
     private final PayrollRepository repo;
     private final EmployeeRepository employees;
+    private final NotificationService notifications;
     public List<PayrollRecord> forEmployee(UUID id, boolean publishedOnly) {
         return publishedOnly?repo.findByEmployeeIdAndStatusOrderByPayPeriodDesc(id, PayrollRecord.Status.PUBLISHED):repo.findByEmployeeIdOrderByPayPeriodDesc(id);
     }
+    @org.springframework.transaction.annotation.Transactional
     public PayrollRecord save(UUID id, Dtos.PayrollRequest r) {
         var period=r.payPeriod().withDayOfMonth(1);
         var p=repo.findByEmployeeIdAndPayPeriod(id, period).orElseGet(PayrollRecord::new);
@@ -26,6 +28,7 @@ import java.util.*;
         if(r.publish()) {
             p.setStatus(PayrollRecord.Status.PUBLISHED);
             p.setPublishedAt(LocalDateTime.now());
+            notifications.send(p.getEmployee().getUserAccount().getUsername(), "Your payslip for " + YearMonth.from(period) + " is available.");
         }
         return repo.save(p);
     }

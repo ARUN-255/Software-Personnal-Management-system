@@ -8,7 +8,7 @@ public final class Dtos {
     }
     public record LoginRequest(@NotBlank String username, @NotBlank String password) {
     }
-    public record ChangePasswordRequest(@NotBlank String currentPassword, @Size(min=8) String newPassword) {
+    public record ChangePasswordRequest(@NotBlank String currentPassword, @NotBlank @Size(min=12, max=72) String newPassword) {
     }
     public record AccessRequest(@NotBlank String fullName, @Email String email, @NotBlank String reason) {
     }

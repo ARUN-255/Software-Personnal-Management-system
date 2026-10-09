@@ -23,9 +23,6 @@ import com.spms.repository.UserAccountRepository;
     @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception {
         return c.getAuthenticationManager();
     }
-    @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception {
-        return c.getAuthenticationManager();
-    }
     @Bean UserDetailsService userDetailsService() {
         return username-> {
             var u=users.findByUsername(username).orElseThrow(()->new UsernameNotFoundException("Invalid credentials"));
@@ -41,7 +38,8 @@ import com.spms.repository.UserAccountRepository;
         c.setAllowedHeaders(List.of("*"));
         c.setAllowCredentials(true);
         source.registerCorsConfiguration("/**", c);
-        h.cors(x->x.configurationSource(source)).csrf(x->x.disable()).authorizeHttpRequests(a->a.requestMatchers("/api/auth/login", "/api/admin-access-requests", "/files/**", "/error").permitAll().requestMatchers("/api/owner/**").hasRole("OWNER").requestMatchers("/api/admin/**").hasRole("ADMIN").requestMatchers("/api/me/**").hasRole("EMPLOYEE").anyRequest().authenticated()).formLogin(x->x.disable()).logout(x->x.disable());
+        h.cors(x->x.configurationSource(source)).csrf(x->x.csrfTokenRepository(new org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository()).csrfTokenRequestHandler(new org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler())).authorizeHttpRequests(a->a.requestMatchers("/api/auth/login", "/api/admin-access-requests", "/api/auth/csrf", "/error").permitAll().requestMatchers("/api/owner/**").hasRole("OWNER").requestMatchers("/api/admin/**").hasRole("ADMIN").requestMatchers("/api/me/**").hasRole("EMPLOYEE").requestMatchers("/api/workspace/**").hasAnyRole("ADMIN", "EMPLOYEE").anyRequest().authenticated()).exceptionHandling(e->e.authenticationEntryPoint((q,r,x)->r.sendError(401)).accessDeniedHandler((q,r,x)->r.sendError(403))).formLogin(x->x.disable()).logout(x->x.disable());
+        h.addFilterAfter(new ActiveAccountFilter(users), org.springframework.security.web.authentication.AnonymousAuthenticationFilter.class);
         return h.build();
     }
 }

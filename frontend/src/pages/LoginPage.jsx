@@ -42,7 +42,7 @@ export default function LoginPage() {
         password: e.target.value
       })} />
       <Button>Sign in</Button>
-      <small>Demo: admin / Admin@123 or employee / Employee@123</small>
+
     </form>
   </div>;
 }

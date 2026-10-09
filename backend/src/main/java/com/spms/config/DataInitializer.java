@@ -6,7 +6,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.spms.entity.*;
 import com.spms.repository.*;
 import java.time.*;
-@Configuration @RequiredArgsConstructor public class DataInitializer {
+@Configuration
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "app.demo-data", havingValue = "true")
+@RequiredArgsConstructor public class DataInitializer {
     private final UserAccountRepository users;
     private final EmployeeRepository employees;
     private final DepartmentRepository departments;
