@@ -102,7 +102,7 @@ npm ci
 npm run build
 ```
 
-The GitHub Actions workflow performs these checks. Integration tests cover access control, CSRF, password-hash exclusion, check-in/out rules, leave overlap, single-review enforcement, request/notification isolation, PDF authorization and disabled-AI behavior. Live S3/Gemini calls require your own credentials and are not made by CI.
+The GitHub Actions workflow performs these checks and a Chromium browser smoke test covering real sign-in, clock-in/out, leave approval, notifications, CSV export, audit navigation and PDF download. Integration tests cover access control, CSRF, password-hash exclusion, check-in/out rules, leave overlap, single-review enforcement, request/notification isolation, PDF authorization and disabled-AI behavior. Live S3/Gemini calls require your own credentials and are not made by CI.
 
 Manual acceptance checks:
 

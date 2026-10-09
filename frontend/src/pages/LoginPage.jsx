@@ -42,7 +42,6 @@ export default function LoginPage() {
         password: e.target.value
       })} />
       <Button>Sign in</Button>
-
     </form>
   </div>;
 }

@@ -22,7 +22,10 @@ export default function OwnerPage() {
       if (!username) return;
       const password = prompt('Enter a temporary password (minimum 8 characters)');
       if (!password) return;
-      credentials = { username, temporaryPassword: password };
+      credentials = {
+        username,
+        temporaryPassword: password
+      };
     }
     setBusy(true);
     setMessage(null);

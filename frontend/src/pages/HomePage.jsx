@@ -14,7 +14,7 @@ export default function HomePage() {
     <section className="hero">
       <span className="eyebrow">SMART PEOPLE OPERATIONS</span>
       <h1>Your workforce.<br /><em>One clear view.</em></h1>
-      <p>A secure personnel workspace for employee profiles, attendance, payroll and certificates.</p>
+      <p>Your personnel workspace for employee records, leave, attendance, payslips and AI-assisted insights.</p>
       <div className="choices">
         <Link to="/login?role=admin">
           <ShieldCheck />
