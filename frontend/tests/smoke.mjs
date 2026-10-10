@@ -153,7 +153,7 @@ try {
   assert.equal(conversations[1].history.length, 2);
   assert.deepEqual(conversations[1].history.map(turn => turn.role), ['user', 'model']);
   assert.equal(conversations[1].language, 'ta');
-  assert.equal(await page.locator('.answer-text strong').first().textContent(), 'Attendance overview');
+  assert.equal(await page.locator('.answer-text strong').first().textContent(), 'வருகைப் பதிவு மேலோட்டம்');
   await page.getByLabel('Interface language').selectOption('en');
   await page.getByRole('button', { name: 'New chat', exact: true }).click();
   await page.getByRole('heading', { name: 'What can I help you with?' }).waitFor();
