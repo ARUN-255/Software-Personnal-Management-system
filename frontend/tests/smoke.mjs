@@ -4,7 +4,7 @@ import { chromium } from 'playwright';
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const errors = [];
-page.on('pageerror', error => errors.push(error.message));
+page.on('pageerror', error => { errors.push(error.message); console.error('BROWSER_ERROR:', error.message); });
 const base = 'http://127.0.0.1:5173';
 const backend = 'http://127.0.0.1:8080/api';
 
@@ -145,4 +145,7 @@ try {
   await page.getByText('Recorded attendance', { exact: true }).waitFor();
   assert.deepEqual(errors, []);
   console.log('PASS: desktop and mobile navigation, scrolling layout, pagination, employee editing, attendance, leave approval, payroll, notifications, PDF, safe markdown and multi-turn chat UI.');
+} catch (error) {
+  console.error('FAILED_PAGE:', page.url(), await page.locator('body').innerText());
+  throw error;
 } finally { await browser.close(); }
