@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUp, Check, Copy, MessageSquarePlus, Sparkles, Square, ChartNoAxesCombined, FileText, Wallet, Mic, MicOff } from 'lucide-react';
+import { ArrowUp, Check, Copy, MessageSquarePlus, Sparkles, Square, ChartNoAxesCombined, FileText, Wallet, Mic, MicOff, Volume2 } from 'lucide-react';
 import { api } from '../api/client';
 import { currentMonth, monthLabel } from '../api/format';
 import { useAuth } from '../context/AuthContext';
@@ -54,6 +54,7 @@ export default function AssistantPage() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(null);
   const [listening, setListening] = useState(false);
+  const [speaking, setSpeaking] = useState(null);
   const bottom = useRef(null);
   const input = useRef(null);
   const controller = useRef(null);
@@ -70,7 +71,12 @@ export default function AssistantPage() {
   useEffect(() => () => {
     sequence.current++;
     controller.current?.abort();
+    window.speechSynthesis?.cancel();
   }, []);
+  useEffect(() => {
+    window.speechSynthesis?.cancel();
+    setSpeaking(null);
+  }, [language]);
   function startVoice() {
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Recognition) {
@@ -108,6 +114,8 @@ export default function AssistantPage() {
   function reset(nextMonth = month) {
     sequence.current++;
     controller.current?.abort();
+    window.speechSynthesis?.cancel();
+    setSpeaking(null);
     setBusy(false);
     setMessages([]);
     setError('');
@@ -180,6 +188,30 @@ export default function AssistantPage() {
       setError('Copy is unavailable in this browser. Select the answer text to copy it.');
     }
   }
+  function speak(message) {
+    if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
+      setError(tamil ? 'இந்த உலாவியில் குரல் வாசிப்பு கிடைக்கவில்லை.' : 'Spoken answers are unavailable in this browser.');
+      return;
+    }
+    window.speechSynthesis.cancel();
+    if (speaking === message.id) {
+      setSpeaking(null);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(message.text.replace(/[*#`]/g, ''));
+    utterance.lang = language === 'ta' ? 'ta-IN' : 'en-IN';
+    utterance.rate = 0.95;
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(item => item.lang.toLowerCase().startsWith(language === 'ta' ? 'ta' : 'en'));
+    if (voice) utterance.voice = voice;
+    utterance.onend = () => setSpeaking(null);
+    utterance.onerror = () => {
+      setSpeaking(null);
+      setError(tamil ? 'பதிலைச் சத்தமாக வாசிக்க முடியவில்லை.' : 'The answer could not be read aloud.');
+    };
+    setSpeaking(message.id);
+    window.speechSynthesis.speak(utterance);
+  }
   return <section className="chat-page" aria-label="AI assistant">
     <header className="chat-heading">
       <div>
@@ -246,10 +278,16 @@ export default function AssistantPage() {
                 {message.text}
               </p>}
             </div>
-            {message.role === 'assistant' && <button className="copy-answer" onClick={() => copy(message)} aria-label="Copy answer">
-              {copied === message.id ? <Check size={15} /> : <Copy size={15} />}
-              {copied === message.id ? tamil ? 'நகலெடுக்கப்பட்டது' : 'Copied' : tamil ? 'நகலெடு' : 'Copy'}
-            </button>}
+            {message.role === 'assistant' && <div className="message-tools">
+              <button className="copy-answer" onClick={() => copy(message)} aria-label="Copy answer">
+                {copied === message.id ? <Check size={15} /> : <Copy size={15} />}
+                {copied === message.id ? tamil ? 'நகலெடுக்கப்பட்டது' : 'Copied' : tamil ? 'நகலெடு' : 'Copy'}
+              </button>
+              <button className="copy-answer" onClick={() => speak(message)} aria-label={speaking === message.id ? 'Stop speaking' : 'Speak answer'}>
+                {speaking === message.id ? <Square size={14} /> : <Volume2 size={16} />}
+                {speaking === message.id ? tamil ? 'நிறுத்து' : 'Stop' : tamil ? 'சத்தமாக வாசி' : 'Listen'}
+              </button>
+            </div>}
             {message.state === 'failed' && <small className="muted">Not answered</small>}
           </div>
         </article>)}

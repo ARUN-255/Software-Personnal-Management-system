@@ -1715,6 +1715,11 @@ tbody tr:hover {
   font-size: 11px;
   margin-top: 10px;
 }
+.message-tools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 .thinking {
   display: flex;
   gap: 5px;

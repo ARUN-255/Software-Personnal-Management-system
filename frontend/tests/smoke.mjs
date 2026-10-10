@@ -145,6 +145,17 @@ try {
   await page.getByLabel('Message the assistant').fill('Summarize attendance this month.');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await page.getByRole('button', { name: 'Copy answer', exact: true }).waitFor();
+  await page.evaluate(() => {
+    window.spokenAnswer = null;
+    window.speechSynthesis.speak = utterance => {
+      window.spokenAnswer = { text: utterance.text, language: utterance.lang };
+      setTimeout(() => utterance.onend?.(), 0);
+    };
+    window.speechSynthesis.cancel = () => {};
+  });
+  await page.getByRole('button', { name: 'Speak answer', exact: true }).click();
+  await page.waitForFunction(() => window.spokenAnswer?.language === 'en-IN');
+  assert.match(await page.evaluate(() => window.spokenAnswer.text), /Attendance overview/);
   await page.getByLabel('Interface language').selectOption('ta');
   await page.getByRole('link', { name: 'AI உதவியாளர்', exact: true }).waitFor();
   await page.getByLabel('Message the assistant').fill('Explain the missing entries.');
