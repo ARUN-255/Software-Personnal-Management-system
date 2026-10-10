@@ -22,16 +22,16 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler({IllegalArgumentException.class, java.time.format.DateTimeParseException.class,
             MethodArgumentTypeMismatchException.class})
-    ResponseEntity<?> bad(Exception error, @RequestHeader(value="X-App-Language", defaultValue="en") String language) {
+    ResponseEntity<?> bad(Exception error, jakarta.servlet.http.HttpServletRequest request) {
         String text = Objects.toString(error.getMessage(), "Invalid request");
-        return ResponseEntity.badRequest().body(Map.of("message", message(text, language)));
+        return ResponseEntity.badRequest().body(Map.of("message", message(text, request.getHeader("X-App-Language"))));
     }
     @ExceptionHandler(NoSuchElementException.class)
-    ResponseEntity<?> missing(@RequestHeader(value="X-App-Language", defaultValue="en") String language) { return ResponseEntity.status(404).body(Map.of("message", message("Record not found", language))); }
+    ResponseEntity<?> missing(jakarta.servlet.http.HttpServletRequest request) { return ResponseEntity.status(404).body(Map.of("message", message("Record not found", request.getHeader("X-App-Language")))); }
     @ExceptionHandler(AuthenticationException.class)
-    ResponseEntity<?> credentials(@RequestHeader(value="X-App-Language", defaultValue="en") String language) { return ResponseEntity.status(401).body(Map.of("message", message("Invalid credentials", language))); }
+    ResponseEntity<?> credentials(jakarta.servlet.http.HttpServletRequest request) { return ResponseEntity.status(401).body(Map.of("message", message("Invalid credentials", request.getHeader("X-App-Language")))); }
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    ResponseEntity<?> denied(@RequestHeader(value="X-App-Language", defaultValue="en") String language) { return ResponseEntity.status(403).body(Map.of("message", message("Access denied", language))); }
+    ResponseEntity<?> denied(jakarta.servlet.http.HttpServletRequest request) { return ResponseEntity.status(403).body(Map.of("message", message("Access denied", request.getHeader("X-App-Language")))); }
     @ExceptionHandler({DataIntegrityViolationException.class, OptimisticLockingFailureException.class})
     ResponseEntity<?> conflict() { return ResponseEntity.status(409).body(Map.of("message", "This record changed or already exists. Refresh and try again.")); }
     @ExceptionHandler(MethodArgumentNotValidException.class)
