@@ -28,6 +28,9 @@ function EmployeePicker({
 }) {
   const [search, setSearch] = useState('');
   const result = useResource(() => api(`/admin/employees?q=${encodeURIComponent(search)}`), [search]);
+  const selected = useResource(() => value ? api(`/admin/employees/${value}`) : Promise.resolve(null), [value]);
+  const options = result.data?.content || [];
+  const employees = selected.data && !options.some(employee => employee.id === selected.data.id) ? [selected.data, ...options] : options;
   return <div className="employee-picker">
     <label className="searchbox">
       <Search size={18} />
@@ -37,7 +40,7 @@ function EmployeePicker({
       <span className="sr-only">Choose employee</span>
       <select aria-label="Choose employee" value={value} onChange={event => onChange(event.target.value)}>
         <option value="">Choose an employee</option>
-        {(result.data?.content || []).map(employee => <option key={employee.id} value={employee.id}>{employee.fullName} · {employee.employeeCode}</option>)}
+        {employees.map(employee => <option key={employee.id} value={employee.id}>{employee.fullName} · {employee.employeeCode}</option>)}
       </select>
     </label>
     {result.error && <p className="alert" role="alert">

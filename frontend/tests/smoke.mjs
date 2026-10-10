@@ -33,6 +33,21 @@ async function noOverflow() {
   assert.equal(overflow, false, 'Page must not overflow horizontally');
 }
 try {
+  // HTTP starts before Spring's demo-data runner finishes. Wait for its account,
+  // then sign out so the actual UI sign-in remains part of the test.
+  let seeded = false;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const csrf = await (await page.request.get(`${backend}/auth/csrf`)).json();
+    const response = await page.request.post(`${backend}/auth/login`, {
+      data: { username: 'employee', password: 'Employee@123' },
+      headers: { 'X-CSRF-TOKEN': csrf.token }
+    });
+    if (response.ok()) { seeded = true; break; }
+    assert.equal(response.status(), 401, 'Unexpected account readiness response');
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  assert.equal(seeded, true, 'Demo account did not become ready');
+  await api('/auth/logout', {});
   await login('employee', 'Employee@123');
   await navigate('Attendance');
   await page.getByRole('button', { name: 'Check in', exact: true }).click();

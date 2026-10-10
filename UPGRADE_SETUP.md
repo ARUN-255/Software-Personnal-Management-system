@@ -75,7 +75,7 @@ Switching providers does not migrate old files. Keep your uploads volume or copy
 
 Create a Gemini API key in Google AI Studio and choose an available model ID from its model list. Paste both values into backend/.env and restart the backend. No key is sent to React. A blank key/model leaves the assistant disabled with a clear message; the rest of the application still works.
 
-Go to **People workspace → AI assistant**, choose a reporting month and ask a question. Employee requests contain that employee's report and published salary components, department and designation; admin requests contain aggregate totals. Passwords, contact details, uploaded documents, coworker names and API keys are excluded. Do not type confidential information into questions. Answers are advisory and must be checked against records. Each account is limited to one AI request per 10 seconds per backend process, with a 40-second provider timeout.
+Go to **AI assistant in the sidebar**, choose a reporting month and ask a question. Employee requests contain that employee's report and published salary components, department and designation; admin requests contain aggregate totals. Passwords, contact details, uploaded documents, coworker names and API keys are excluded. Do not type confidential information into questions. Answers are advisory and must be checked against records. Each account is limited to one AI request per 10 seconds per backend process, with a 40-second provider timeout.
 
 ## 4. Docker
 
@@ -106,7 +106,7 @@ The GitHub Actions workflow performs these checks and a Chromium browser smoke t
 
 Manual acceptance checks:
 
-1. Sign in as employee, open People workspace, check in and check out, then confirm the monthly hours.
+1. Sign in as employee, open Attendance, check in and check out, then confirm the monthly hours.
 2. Submit leave and an attendance correction. As admin, review with a comment; confirm employee notification and corrected record.
 3. Publish payroll from the employee profile. As employee, download the PDF. Download the admin CSV and print the monthly report.
 4. Upload an image with local storage, then another with S3 configured. Both should load only for authorized sessions.
@@ -122,3 +122,7 @@ Leave is recorded separately from attendance and salary: it does not calculate e
 - https://ai.google.dev/api/generate-content
 - https://ai.google.dev/gemini-api/docs/api-key
 - https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html
+
+## Redesigned workspace
+
+Each sidebar item opens its own screen within the scrollable workspace. Mobile navigation opens from the menu button. The AI assistant supports follow-up questions, safe formatted answers, stop, copy and new chat. Chat history lasts only while that screen remains open; changing month starts a new conversation. Keep the existing backend environment configuration and restart both servers after updating.
