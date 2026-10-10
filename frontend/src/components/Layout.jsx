@@ -4,6 +4,7 @@ import { Bell, Menu, X, ChevronRight } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
+import TranslationBoundary from './TranslationBoundary';
 export default function Layout({
   role
 }) {
@@ -75,7 +76,9 @@ export default function Layout({
         <Sidebar />
       </div>
       <main id="main-content" className={`main-content ${location.pathname === '/assistant' ? 'chat-main' : ''}`} ref={main} tabIndex={-1}>
-        <Outlet />
+        <TranslationBoundary key={`${location.pathname}-${location.pathname === '/assistant' ? 'conversation' : language}`}>
+          <Outlet />
+        </TranslationBoundary>
       </main>
     </div>
     <dialog ref={drawer} className="navigation-dialog" onCancel={() => setOpen(false)} onClose={() => {

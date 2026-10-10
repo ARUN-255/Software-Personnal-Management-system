@@ -109,6 +109,11 @@ try {
   await page.getByRole('heading', { name: 'Attendance overview' }).waitFor();
   await noOverflow();
   console.log('UI_PREVIEW_DASHBOARD=' + (await page.screenshot({ type: 'jpeg', quality: 55 })).toString('base64'));
+  await page.getByLabel('Interface language').selectOption('ta');
+  await page.getByRole('heading', { name: 'முகப்பு', exact: true }).waitFor();
+  assert.equal(await page.locator('.desktop-sidebar').evaluate(element => getComputedStyle(element).backgroundColor), 'rgb(233, 248, 238)');
+  await page.getByLabel('Interface language').selectOption('en');
+  await page.getByRole('heading', { name: 'Dashboard', exact: true }).waitFor();
 
   // Deterministic UI-only model response: no cloud credentials or live AI call in CI.
   await page.route('**/api/workspace/assistant/status', route => route.fulfill({ json: { configured: true } }));

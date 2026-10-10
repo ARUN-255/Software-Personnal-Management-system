@@ -2227,3 +2227,68 @@ tbody tr:hover {
     border-radius: 22px;
   }
 }
+/* Light green navigation requested for the bilingual workspace */ .translated-page {
+  min-height: 100%;
+  height: 100%;
+}
+.app-header {
+  background: #dff7e7;
+  border-bottom-color: #18a957;
+  color: #102419;
+}
+.header-divider {
+  background: #8acda3;
+}
+.header-workspace {
+  color: #28563c;
+}
+.header-account .user-initial {
+  background: #bce8cc;
+  color: #114d2d;
+  border-color: #8bcaa2;
+}
+.language-control select {
+  border-color: #75c494;
+  background: #f7fffa;
+  color: #123d27;
+}
+.desktop-sidebar {
+  background: #e9f8ee;
+  border-right-color: #9ed5b1;
+}
+.sidebar-label {
+  color: #397050;
+}
+.sidebar nav a {
+  color: #183c27;
+  font-weight: 600;
+}
+.sidebar nav a svg {
+  color: #36734e;
+}
+.sidebar nav a:hover {
+  background: #d9f1e1;
+}
+.sidebar nav a.active {
+  background: #c9ecd6;
+  color: #075d34;
+  border-left-color: #109c4d;
+}
+.sidebar-bottom nav, .sidebar-user {
+  border-color: #afd9be;
+}
+.sidebar-user {
+  color: #173c27;
+}
+.byline {
+  color: #4f725c;
+}
+.navigation-dialog {
+  color: #183c27;
+  background: #e9f8ee;
+}
+.drawer-heading {
+  color: #173c27;
+  background: #d7f1e0;
+  border-bottom-color: #9ed5b1;
+}
