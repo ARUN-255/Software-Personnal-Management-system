@@ -1,41 +1,56 @@
 import { Link } from 'react-router-dom';
-import { ShieldCheck, UserRound, UsersRound, Clock3, WalletCards, FileCheck2 } from 'lucide-react';
+import { ArrowRight, ShieldCheck, UserRound, Check, CalendarDays, Wallet, Users } from 'lucide-react';
 export default function HomePage() {
   return <div className="landing">
-    <nav>
-      <div style={{
-        display: 'grid'
-      }}>
-        <b>Bronzera Labs</b>
-        <small>By Arun</small>
+    <header className="public-header">
+      <Link to="/" className="wordmark"><span className="brand-mark">B<span /></span>Bronzera<span className="wordmark-light">Labs</span></Link>
+      <Link className="btn secondary" to="/login">Sign in <ArrowRight size={17} /></Link>
+    </header>
+    <main className="landing-main">
+      <div className="landing-copy">
+        <span className="eyebrow">PEOPLE. WORK. SIMPLIFIED.</span>
+        <h1>A better place<br />to manage<br /><em>your workday.</em></h1>
+        <p>One workspace for your team, attendance and payroll. Less searching. More clarity.</p>
+        <div className="landing-proof">
+          <span><Check size={17} />Simple to use</span>
+          <span><Check size={17} />Built for your team</span>
+        </div>
+        <small>Bronzera Labs · By Arun</small>
       </div>
-      <Link to="/login">Sign in</Link>
-    </nav>
-    <section className="hero">
-      <span className="eyebrow">SMART PEOPLE OPERATIONS</span>
-      <h1>Your workforce.<br /><em>One clear view.</em></h1>
-      <p>Your personnel workspace for employee records, leave, attendance, payslips and AI-assisted insights.</p>
-      <div className="choices">
-        <Link to="/login?role=admin">
-          <ShieldCheck />
-          <b>Administrator</b>
-          <small>Manage employees and records</small>
+      <section className="entry-panel">
+        <span className="eyebrow">LET’S GET STARTED</span>
+        <h2>Your workspace awaits.</h2>
+        <p>Choose how you’d like to sign in.</p>
+        <Link className="role-card" to="/login?role=employee">
+          <span className="card-icon">
+            <UserRound />
+          </span>
+          <div>
+            <h3>Employee</h3>
+            <p>My attendance, payslips and requests</p>
+          </div>
+          <ArrowRight />
         </Link>
-        <Link to="/login?role=employee">
-          <UserRound />
-          <b>Employee</b>
-          <small>View your personal workspace</small>
+        <Link className="role-card" to="/login?role=admin">
+          <span className="card-icon">
+            <ShieldCheck />
+          </span>
+          <div>
+            <h3>Administrator</h3>
+            <p>Manage people and team records</p>
+          </div>
+          <ArrowRight />
         </Link>
-      </div>
-      <Link className="request" to="/request-access">Request administrator access →</Link>
-    </section>
-    <section className="features">
-      {[[UsersRound, 'Employee records'], [Clock3, 'Attendance'], [WalletCards, 'Payroll'], [FileCheck2, 'Documents']].map(([I, t]) => <div key={t}>
-        <I />
-        <b>
-          {t}
-        </b>
-      </div>)}
-    </section>
+        <div className="entry-bottom">
+          <Link to="/request-access">Request admin access</Link>
+          <Link to="/login?role=owner">Owner sign in</Link>
+        </div>
+      </section>
+    </main>
+    <footer className="landing-footer">
+      <span><Users size={18} />People management</span>
+      <span><CalendarDays size={18} />Attendance & leave</span>
+      <span><Wallet size={18} />Payroll & payslips</span>
+    </footer>
   </div>;
 }

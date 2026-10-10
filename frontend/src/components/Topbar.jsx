@@ -3,7 +3,7 @@ export default function Topbar({
   subtitle,
   actions
 }) {
-  return <header className="top">
+  return <header className="page-heading">
     <div>
       <h1>
         {title}
@@ -12,7 +12,7 @@ export default function Topbar({
         {subtitle}
       </p>}
     </div>
-    {actions && <div>
+    {actions && <div className="page-actions">
       {actions}
     </div>}
   </header>;

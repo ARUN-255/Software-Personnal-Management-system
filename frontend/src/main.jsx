@@ -5,7 +5,6 @@ import { AuthProvider } from './context/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import App from './App';
 import './styles/index.css';
-import './styles/photos.css';
 createRoot(document.getElementById('root')).render(<React.StrictMode>
   <ErrorBoundary>
     <BrowserRouter>

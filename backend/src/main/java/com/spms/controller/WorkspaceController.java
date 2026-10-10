@@ -81,7 +81,10 @@ public class WorkspaceController {
                 .body(reports.payslip(record));
     }
 
-    public record Question(@NotBlank @Size(max = 2000) String question, @NotBlank String month) {}
+    public record ChatTurn(@NotBlank @Pattern(regexp = "user|model") String role,
+            @NotBlank @Size(max = 8000) String text) {}
+    public record Question(@NotBlank @Size(max = 2000) String question, @NotBlank String month,
+            @Size(max = 12) List<@Valid ChatTurn> history) {}
 
     @GetMapping("/api/workspace/assistant/status")
     public Map<String, Boolean> aiStatus() { return Map.of("configured", assistant.configured()); }
@@ -100,7 +103,7 @@ public class WorkspaceController {
                     .stream().filter(p -> YearMonth.from(p.getPayPeriod()).equals(month))
                     .map(p -> Map.of("basic", p.getBasicPay(), "allowances", p.getAllowances(), "deductions", p.getDeductions(), "net", p.getNetPay())).toList());
         }
-        return Map.of("answer", assistant.answer(auth.getName(), input.question(), context));
+        return Map.of("answer", assistant.answer(auth.getName(), input.question(), context, input.history() == null ? List.of() : input.history().stream().map(turn -> Map.of("role", turn.role(), "text", turn.text())).toList()));
     }
 
     @GetMapping("/api/admin/audit")

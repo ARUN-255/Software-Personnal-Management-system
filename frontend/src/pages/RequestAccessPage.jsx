@@ -32,16 +32,16 @@ export default function RequestAccessPage() {
         {err && <div className="alert">
           {err}
         </div>}
-        <FormField label="Full name" value={f.fullName} onChange={e => setF({
+        <FormField label="Full name" required value={f.fullName} onChange={e => setF({
           ...f,
           fullName: e.target.value
         })} />
-        <FormField label="Email" type="email" value={f.email} onChange={e => setF({
+        <FormField label="Email" required type="email" value={f.email} onChange={e => setF({
           ...f,
           email: e.target.value
         })} />
         <FormField label="Reason">
-          <textarea rows="4" value={f.reason} onChange={e => setF({
+          <textarea required rows="4" value={f.reason} onChange={e => setF({
             ...f,
             reason: e.target.value
           })} />

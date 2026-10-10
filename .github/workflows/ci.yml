@@ -1,7 +1,7 @@
 name: Build and test
 on:
   push:
-    branches: [main, upgrade/cloud-ai]
+    branches: [main, upgrade/cloud-ai, redesign/saas-interface]
   pull_request:
 permissions:
   contents: read

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { api } from '../api/client';
 import Topbar from '../components/Topbar';
-import '../styles/workspace.css';
 export default function AccountPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -32,7 +31,7 @@ export default function AccountPage() {
   }
   return <>
     <Topbar title="Account security" subtitle="Keep your login details up to date." />
-    <div className="content workspace">
+    <div className="content narrow">
       <section className="panel">
         <h2>Change password</h2>
         {message && <div className="success">
@@ -41,15 +40,15 @@ export default function AccountPage() {
         {error && <div className="alert">
           {error}
         </div>}
-        <form className="workspace-form" onSubmit={change}>
+        <form className="formgrid" onSubmit={change}>
           <label>Current password<input type="password" name="currentPassword" autoComplete="current-password" required /></label>
           <label>New password<input type="password" name="newPassword" autoComplete="new-password" minLength={12} required /></label>
           <label>Confirm new password<input type="password" name="confirmPassword" autoComplete="new-password" minLength={12} required /></label>
-          <button disabled={busy}>
+          <button className="btn" disabled={busy}>
             {busy ? 'Saving…' : 'Change password'}
           </button>
         </form>
-        <p>Use at least 12 characters. Cloud API keys belong in your backend configuration, not in this form.</p>
+        <p>Use at least 12 characters for your new password.</p>
       </section>
     </div>
   </>;

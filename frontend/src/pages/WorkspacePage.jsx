@@ -1,57 +1,54 @@
-import { useEffect, useRef, useState } from 'react';
-import { api, downloadUrl } from '../api/client';
+import { useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ArrowDownToLine, ArrowRight, CalendarDays, Check, Clock3, FileText, Plus, Printer, Search } from 'lucide-react';
+import { api, downloadUrl, fileUrl } from '../api/client';
+import { today, currentMonth, monthLabel, money, clockTime, humanStatus } from '../api/format';
 import { useAuth } from '../context/AuthContext';
+import { useResource } from '../hooks/useResource';
 import Topbar from '../components/Topbar';
-import '../styles/workspace.css';
-const localDate = () => new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Kolkata'
-}).format(new Date());
-const money = value => new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR'
-}).format(value || 0);
-const time = value => value ? new Date(value).toLocaleTimeString([], {
-  hour: '2-digit',
-  minute: '2-digit'
-}) : '—';
-export default function WorkspacePage() {
-  const {
-    user
-  } = useAuth();
-  const admin = user.role === 'ADMIN';
-  const [tab, setTab] = useState('reports');
-  const [month, setMonth] = useState(localDate().slice(0, 7));
-  const [data, setData] = useState(null);
+import PageState from '../components/PageState';
+import Modal from '../components/Modal';
+import DataTable from '../components/DataTable';
+import StatusBadge from '../components/StatusBadge';
+export function MonthFilter({
+  month,
+  setMonth
+}) {
+  return <label className="month-filter">
+    <CalendarDays size={18} />
+    <span className="sr-only">Reporting month</span>
+    <input aria-label="Reporting month" type="month" value={month} onChange={event => {
+      if (event.target.value) setMonth(event.target.value);
+    }} />
+  </label>;
+}
+function EmployeePicker({
+  value,
+  onChange
+}) {
+  const [search, setSearch] = useState('');
+  const result = useResource(() => api(`/admin/employees?q=${encodeURIComponent(search)}`), [search]);
+  return <div className="employee-picker">
+    <label className="searchbox">
+      <Search size={18} />
+      <input aria-label="Search employee" placeholder="Find an employee…" value={search} onChange={event => setSearch(event.target.value)} />
+    </label>
+    <label>
+      <span className="sr-only">Choose employee</span>
+      <select aria-label="Choose employee" value={value} onChange={event => onChange(event.target.value)}>
+        <option value="">Choose an employee</option>
+        {(result.data?.content || []).map(employee => <option key={employee.id} value={employee.id}>{employee.fullName} · {employee.employeeCode}</option>)}
+      </select>
+    </label>
+    {result.error && <p className="alert" role="alert">
+      {result.error}
+    </p>}
+  </div>;
+}
+function useAction(reload) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const loadId = useRef(0);
-  async function load() {
-    const requestId = ++loadId.current;
-    const [report, requests, notifications, status, attendance, payroll, audit] = await Promise.all([api(`/workspace/reports?month=${month}`), api('/workspace/requests'), api('/workspace/notifications'), api('/workspace/assistant/status'), admin ? [] : api('/me/attendance'), admin ? [] : api('/me/payroll'), admin ? api('/admin/audit') : []]);
-    if (requestId !== loadId.current) return;
-    setData({
-      report,
-      requests,
-      notifications,
-      status,
-      attendance,
-      payroll,
-      audit
-    });
-  }
-  useEffect(() => {
-    let active = true;
-    setData(null);
-    setError('');
-    load().catch(e => {
-      if (active) setError(e.message);
-    });
-    return () => {
-      active = false;
-      loadId.current++;
-    };
-  }, [month]);
   async function perform(action, success) {
     setBusy(true);
     setError('');
@@ -59,340 +56,512 @@ export default function WorkspacePage() {
     try {
       await action();
       setMessage(success);
-      await load();
-    } catch (e) {
-      setError(e.message);
+      await reload();
+      return true;
+    } catch (error) {
+      setError(error.message);
+      return false;
     } finally {
       setBusy(false);
     }
   }
-  const tabs = [['reports', 'Monthly overview'], ['requests', admin ? 'Review requests' : 'Leave & corrections'], ['assistant', 'AI assistant'], ['notifications', 'Notifications'], ...(admin ? [['audit', 'Audit history']] : [['payslips', 'Payslips']])];
+  return {
+    busy,
+    message,
+    error,
+    perform
+  };
+}
+function Feedback({
+  error,
+  message
+}) {
   return <>
-    <Topbar title="People workspace" subtitle="Attendance, requests and insights in one place." />
-    <div className="content workspace">
-      <div className="workspace-toolbar no-print">
-        <nav aria-label="Workspace sections">
-          {tabs.map(([id, label]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
-            {label}
-          </button>)}
-        </nav>
-        <label>Reporting month<input aria-label="Reporting month" type="month" value={month} onChange={e => {
-            if (e.target.value) setMonth(e.target.value);
-          }} /></label>
-      </div>
-      {error && <div className="alert" role="alert">
-        {error}
-      </div>}
-      {message && <div className="success" role="status">
-        {message}
-      </div>}
-      {!data ? <section className="panel">
-        {error ? <button onClick={() => perform(async () => {}, 'Refreshed')}>Retry</button> : 'Loading workspace…'}
-      </section> : <>
-        {tab === 'reports' && <>
-          <div className="workspace-stats">
-            <article>
-              <span>Recorded attendance</span>
-              <strong>
-                {data.report.recordCount}
-              </strong>
-              <small>
-                {month}
-              </small>
-            </article>
-            <article>
-              <span>Checked-in working hours</span>
-              <strong>
-                {(data.report.workedMinutes / 60).toFixed(1)}
-              </strong>
-              <small>Completed check-in/out sessions</small>
-            </article>
-            <article>
-              <span>Published net pay</span>
-              <strong>
-                {money(data.report.publishedNetPay)}
-              </strong>
-              <small>{data.report.payslipCount} payslip(s)</small>
-            </article>
-          </div>
-          <section className="panel">
-            <h2>Attendance breakdown</h2>
-            <p>Counts include recorded days only. Missing records are not automatically absences.</p>
-            {Object.entries(data.report.attendance).map(([status, count]) => <div className="attendance-bar" key={status}>
-              <span>
-                {status.replace('_', ' ')}
-              </span>
-              <progress aria-label={status} value={count} max={Math.max(data.report.recordCount, 1)} />
-              <b>
-                {count}
-              </b>
-            </div>)}
-            <div className="workspace-actions no-print">
-              <button onClick={() => window.print()}>Print / save report as PDF</button>
-              {admin && <a href={downloadUrl(`/admin/reports/attendance.csv?month=${month}`)}>Download attendance CSV</a>}
-            </div>
-          </section>
-          {!admin && <section className="panel">
-            <h2>Today's attendance</h2>
-            <p>One check-in and check-out each calendar day, using the organisation's time zone. Overnight shifts require an admin correction.</p>
-            <div className="workspace-actions">
-              <button disabled={busy || !!data.attendance.find(r => r.workDate === localDate())?.checkedInAt} onClick={() => perform(() => api('/me/check-in', {
-                method: 'POST'
-              }), 'Checked in successfully')}>Check in</button>
-              <button disabled={busy || !data.attendance.find(r => r.workDate === localDate())?.checkedInAt || !!data.attendance.find(r => r.workDate === localDate())?.checkedOutAt} onClick={() => perform(() => api('/me/check-out', {
-                method: 'POST'
-              }), 'Checked out successfully')}>Check out</button>
-            </div>
-            <div className="workspace-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>In</th>
-                    <th>Out</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.attendance.filter(r => r.workDate.startsWith(month)).map(r => <tr key={r.id}>
-                    <td>
-                      {r.workDate}
-                    </td>
-                    <td>
-                      {r.status}
-                    </td>
-                    <td>
-                      {time(r.checkedInAt)}
-                    </td>
-                    <td>
-                      {time(r.checkedOutAt)}
-                    </td>
-                  </tr>)}
-                </tbody>
-              </table>
-            </div>
-          </section>}
-          {admin && <section className="panel">
-            <h2>Missing certificates</h2>
-            <p>Employees with no certificate on file. Requirements should be confirmed by an administrator.</p>
-            {data.report.missingCertificates.length === 0 ? <p>No missing certificates.</p> : data.report.missingCertificates.map(employee => <div className="workspace-row" key={employee.id}>
-              <span>{employee.name} <small>
-                  {employee.code}
-                </small></span>
-              <button disabled={busy} onClick={() => perform(() => api(`/admin/employees/${employee.id}/certificate-reminder`, {
-                method: 'POST'
-              }), 'In-app reminder sent')}>Send reminder</button>
-            </div>)}
-          </section>}
-        </>}
-        {tab === 'requests' && <Requests admin={admin} requests={data.requests} busy={busy} perform={perform} />}
-        {tab === 'assistant' && <Assistant key={month} configured={data.status.configured} month={month} admin={admin} />}
-        {tab === 'notifications' && <section className="panel">
-          <h2>Notifications</h2>
-          {!data.notifications.length && <p>You're all caught up. Approval decisions, payslips and reminders will appear here.</p>}
-          {data.notifications.map(note => <div key={note.id} className={`workspace-row ${note.read ? 'read' : ''}`}>
-            <div>
-              <p>
-                {note.message}
-              </p>
-              <small>
-                {new Date(note.createdAt).toLocaleString()}
-              </small>
-            </div>
-            {!note.read && <button disabled={busy} onClick={() => perform(() => api(`/workspace/notifications/${note.id}/read`, {
-              method: 'POST'
-            }), 'Marked as read')}>Mark read</button>}
-          </div>)}
-        </section>}
-        {tab === 'payslips' && <section className="panel">
-          <h2>Published payslips</h2>
-          <p>Download a PDF showing salary components and deductions.</p>
-          {!data.payroll.length && <p>No published payslips yet.</p>}
-          {data.payroll.map(pay => <div className="workspace-row" key={pay.id}>
-            <div>
-              <b>
-                {pay.payPeriod.slice(0, 7)}
-              </b>
-              <p>Basic {money(pay.basicPay)} + allowances {money(pay.allowances)} − deductions {money(pay.deductions)}</p>
-              <strong>Net {money(pay.netPay)}</strong>
-            </div>
-            <a href={downloadUrl(`/workspace/payslips/${pay.id}.pdf`)}>Download PDF</a>
-          </div>)}
-        </section>}
-        {tab === 'audit' && admin && <section className="panel">
-          <h2>Recent audit history</h2>
-          <p>Latest 100 successful write operations. Passwords, prompts and request bodies are excluded.</p>
-          <div className="workspace-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>When</th>
-                  <th>Who</th>
-                  <th>Action</th>
-                  <th>Target</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.audit.map(event => <tr key={event.id}>
-                  <td>
-                    {new Date(event.timestamp).toLocaleString()}
-                  </td>
-                  <td>
-                    {event.actor?.username || 'System'}
-                  </td>
-                  <td>
-                    {event.action}
-                  </td>
-                  <td>
-                    {event.targetId}
-                  </td>
-                </tr>)}
-              </tbody>
-            </table>
-          </div>
-        </section>}
-      </>}
-    </div>
+    {error && <div className="alert" role="alert">
+      {error}
+    </div>}
+    {message && <div className="success" role="status">
+      <Check size={18} />
+      {message}
+    </div>}
   </>;
 }
-function Requests({
-  admin,
-  requests,
-  busy,
-  perform
+function ResourceState({
+  resource
 }) {
-  const [kind, setKind] = useState('LEAVE');
-  const [comments, setComments] = useState({});
-  async function submit(event) {
+  return <PageState loading={resource.loading} error={resource.error} retry={resource.reload} />;
+}
+export function AttendancePage() {
+  const admin = useAuth().user.role === 'ADMIN';
+  const [params] = useSearchParams();
+  const [employeeId, setEmployeeId] = useState(params.get('employee') || '');
+  const [month, setMonth] = useState(currentMonth());
+  const [edit, setEdit] = useState(false);
+  const resource = useResource(() => admin ? employeeId ? api(`/admin/employees/${employeeId}/attendance`) : Promise.resolve([]) : api('/me/attendance'), [admin, employeeId]);
+  const action = useAction(resource.reload);
+  const rows = (resource.data || []).filter(row => row.workDate.startsWith(month));
+  const current = (resource.data || []).find(row => row.workDate === today());
+  const minutes = rows.reduce((total, row) => total + (row.checkedInAt && row.checkedOutAt ? Math.max(0, (new Date(row.checkedOutAt) - new Date(row.checkedInAt)) / 60000) : 0), 0);
+  async function save(event) {
     event.preventDefault();
-    const form = event.currentTarget;
-    const values = Object.fromEntries(new FormData(form));
-    values.kind = kind;
-    if (kind === 'ATTENDANCE') values.endDate = values.startDate;
-    await perform(() => api('/me/requests', {
-      method: 'POST',
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    if (await action.perform(() => api(`/admin/employees/${employeeId}/attendance`, {
+      method: 'PUT',
       body: JSON.stringify(values)
-    }), 'Request submitted for review');
+    }), 'Attendance saved')) setEdit(false);
   }
   return <>
-    {!admin && <section className="panel">
-      <h2>New request</h2>
-      <form className="workspace-form" onSubmit={submit}>
-        <label>Request type<select value={kind} onChange={e => setKind(e.target.value)}>
+    <Topbar title="Attendance" subtitle={admin ? 'Review and update daily records.' : 'Your time, at a glance.'} actions={<MonthFilter month={month} setMonth={setMonth} />} />
+    <div className="content">
+      <Feedback {...action} />
+      {admin ? <section className="panel compact">
+        <EmployeePicker value={employeeId} onChange={setEmployeeId} />
+      </section> : <section className="clock-card">
+        <div className="clock-icon">
+          <Clock3 size={28} />
+        </div>
+        <div>
+          <span className="eyebrow">TODAY · {today()}</span>
+          <h2>
+            {current?.checkedOutAt ? 'Your workday is complete' : current?.checkedInAt ? 'You’re checked in' : 'Ready to start your day?'}
+          </h2>
+          <p>
+            {current?.checkedInAt ? `In at ${clockTime(current.checkedInAt)}${current.checkedOutAt ? ` · Out at ${clockTime(current.checkedOutAt)}` : ''}` : 'Check in when you begin work.'}
+          </p>
+        </div>
+        <div className="actions">
+          <button className="btn" disabled={action.busy || resource.loading || !!current?.checkedInAt} onClick={() => action.perform(() => api('/me/check-in', {
+            method: 'POST'
+          }), 'Checked in successfully')}>Check in</button>
+          <button className="btn secondary" disabled={action.busy || !current?.checkedInAt || !!current?.checkedOutAt} onClick={() => action.perform(() => api('/me/check-out', {
+            method: 'POST'
+          }), 'Checked out successfully')}>Check out</button>
+        </div>
+      </section>}
+      {(!admin || employeeId) && <>
+        <div className="stats three">
+          <article>
+            <span>Present days</span>
+            <strong>
+              {rows.filter(row => row.status === 'PRESENT').length}
+            </strong>
+          </article>
+          <article>
+            <span>Recorded days</span>
+            <strong>
+              {rows.length}
+            </strong>
+          </article>
+          <article>
+            <span>Hours worked</span>
+            <strong>
+              {(minutes / 60).toFixed(1)}
+            </strong>
+          </article>
+        </div>
+        <section className="panel">
+          <div className="panelhead">
+            <div>
+              <h2>
+                {monthLabel(month)}
+              </h2>
+              <p>Recorded days only · same-day shifts</p>
+            </div>
+            {admin ? <button className="btn secondary" onClick={() => setEdit(true)}><Plus size={18} />Add / correct record</button> : <Link className="text-link" to="/requests">Request a correction <ArrowRight size={17} /></Link>}
+          </div>
+          {resource.loading || resource.error ? <ResourceState resource={resource} /> : <DataTable rows={rows} columns={[{
+            key: 'workDate',
+            label: 'Date'
+          }, {
+            key: 'status',
+            label: 'Status',
+            render: row => <StatusBadge value={row.status} />
+          }, {
+            key: 'in',
+            label: 'Check in',
+            render: row => clockTime(row.checkedInAt)
+          }, {
+            key: 'out',
+            label: 'Check out',
+            render: row => clockTime(row.checkedOutAt)
+          }, {
+            key: 'remarks',
+            label: 'Notes'
+          }]} />}
+        </section>
+      </>}
+      {admin && !employeeId && <PageState title="Choose an employee">Their attendance records will appear here.</PageState>}
+    </div>
+    {edit && <Modal title="Update attendance" onClose={() => setEdit(false)}>
+      <form className="formgrid" onSubmit={save}>
+        <Feedback error={action.error} />
+        <label>Date<input type="date" name="workDate" max={today()} required /></label>
+        <label>Status<select name="status">
+            <option>PRESENT</option>
+            <option>ABSENT</option>
+            <option>HALF_DAY</option>
+            <option>HOLIDAY</option>
+          </select></label>
+        <label className="wide">Notes<textarea name="remarks" maxLength={500} rows={3} /></label>
+        <button className="btn wide" disabled={action.busy}>Save attendance</button>
+      </form>
+    </Modal>}
+  </>;
+}
+export function RequestsPage() {
+  const admin = useAuth().user.role === 'ADMIN';
+  const resource = useResource(() => api('/workspace/requests'), []);
+  const action = useAction(resource.reload);
+  const [filter, setFilter] = useState('ALL');
+  const [create, setCreate] = useState(false);
+  const [review, setReview] = useState(null);
+  const [kind, setKind] = useState('LEAVE');
+  const requests = (resource.data || []).filter(request => filter === 'ALL' || request.status === filter);
+  async function submit(event) {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    values.kind = kind;
+    if (kind === 'ATTENDANCE') values.endDate = values.startDate;
+    if (await action.perform(() => api('/me/requests', {
+      method: 'POST',
+      body: JSON.stringify(values)
+    }), 'Request submitted for review')) setCreate(false);
+  }
+  async function decide(event) {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    const approve = event.nativeEvent.submitter.value === 'approve';
+    if (await action.perform(() => api(`/admin/requests/${review.id}/decision`, {
+      method: 'POST',
+      body: JSON.stringify({
+        approve,
+        comment: values.comment
+      })
+    }), approve ? 'Request approved' : 'Request rejected')) setReview(null);
+  }
+  return <>
+    <Topbar title="Leave & requests" subtitle={admin ? 'Review your team’s requests.' : 'Apply for leave or correct an attendance record.'} actions={!admin && <button className="btn" onClick={() => setCreate(true)}><Plus size={19} />New request</button>} />
+    <div className="content">
+      <Feedback {...action} />
+      <div className="filter-tabs" aria-label="Filter requests">
+        {['ALL', 'PENDING', 'APPROVED', 'REJECTED'].map(status => <button key={status} className={filter === status ? 'active' : ''} onClick={() => setFilter(status)} aria-pressed={filter === status}>
+          {humanStatus(status)}
+          <span>
+            {(resource.data || []).filter(r => status === 'ALL' || r.status === status).length}
+          </span>
+        </button>)}
+      </div>
+      {resource.loading || resource.error ? <ResourceState resource={resource} /> : requests.length ? <section className="request-list">
+        {requests.map(request => <article className="panel request-card" key={request.id}>
+          <div className="request-icon">
+            <CalendarDays />
+          </div>
+          <div className="request-body">
+            <div className="panelhead">
+              <h2>
+                {request.kind === 'LEAVE' ? 'Leave request' : 'Attendance correction'}
+              </h2>
+              <StatusBadge value={request.status} />
+            </div>
+            {admin && <b>
+              {request.employee.fullName}
+            </b>}
+            <p>
+              {request.startDate}
+              {request.endDate !== request.startDate ? ` → ${request.endDate}` : ''}
+              {request.requestedAttendanceStatus ? ` · ${humanStatus(request.requestedAttendanceStatus)}` : ''}
+            </p>
+            <p className="request-reason">
+              {request.reason}
+            </p>
+            {request.reviewerComment && <div className="review-note">
+              <b>Review note</b>
+              <p>
+                {request.reviewerComment}
+              </p>
+            </div>}
+            {admin && request.status === 'PENDING' && <button className="btn secondary" onClick={() => setReview(request)}>Review request <ArrowRight size={17} /></button>}
+          </div>
+        </article>)}
+      </section> : <PageState title="No requests here">
+        {admin ? 'New employee requests will appear here.' : 'Use New request to apply for leave or an attendance correction.'}
+      </PageState>}
+    </div>
+    {create && <Modal title="New request" onClose={() => setCreate(false)}>
+      <form className="formgrid" onSubmit={submit}>
+        <div className="wide">
+          <Feedback error={action.error} />
+        </div>
+        <label className="wide">Request type<select value={kind} onChange={event => setKind(event.target.value)}>
             <option value="LEAVE">Leave</option>
             <option value="ATTENDANCE">Attendance correction</option>
           </select></label>
         <label>
           {kind === 'LEAVE' ? 'Start date' : 'Attendance date'}
-          <input type="date" name="startDate" min={kind === 'LEAVE' ? localDate() : undefined} max={kind === 'ATTENDANCE' ? localDate() : undefined} required />
+          <input type="date" name="startDate" min={kind === 'LEAVE' ? today() : undefined} max={kind === 'ATTENDANCE' ? today() : undefined} required />
         </label>
-        {kind === 'LEAVE' ? <label>End date<input type="date" name="endDate" min={localDate()} required /></label> : <label>Correct status<select name="requestedAttendanceStatus">
+        {kind === 'LEAVE' ? <label>End date<input type="date" name="endDate" min={today()} required /></label> : <label>Correct status<select name="requestedAttendanceStatus">
             <option>PRESENT</option>
             <option>ABSENT</option>
             <option>HALF_DAY</option>
             <option>HOLIDAY</option>
           </select></label>}
-        <label className="wide">Reason<textarea name="reason" maxLength={1000} required rows={3} /></label>
-        <button disabled={busy} type="submit">Submit request</button>
+        <label className="wide">Reason<textarea name="reason" rows={4} maxLength={1000} required /></label>
+        <button className="btn wide" disabled={action.busy}>Submit request</button>
       </form>
-      <p>Approved leave is recorded separately; it does not automatically deduct salary or rewrite attendance.</p>
-    </section>}
-    <section className="panel">
-      <h2>
-        {admin ? 'Review employee requests' : 'My requests'}
-      </h2>
-      {!requests.length && <p>No requests yet.</p>}
-      {requests.map(request => <article className="request-card" key={request.id}>
-        <div className="workspace-row">
-          <strong>
-            {admin ? `${request.employee.fullName} · ` : ''}
-            {request.kind === 'LEAVE' ? 'Leave' : 'Attendance correction'}
-          </strong>
-          <span className="request-status">
-            {request.status}
-          </span>
+    </Modal>}
+    {review && <Modal title="Review request" onClose={() => setReview(null)}>
+      <p>{review.employee.fullName} · {review.startDate}</p>
+      <p>
+        {review.reason}
+      </p>
+      <form onSubmit={decide}>
+        <Feedback error={action.error} />
+        <label>Review comment<textarea name="comment" required maxLength={1000} rows={3} /></label>
+        <div className="actions form-actions">
+          <button className="btn" value="approve" disabled={action.busy}>Approve</button>
+          <button className="btn danger" value="reject" disabled={action.busy}>Reject</button>
         </div>
-        <p>{request.startDate} — {request.endDate}{request.kind === 'ATTENDANCE' ? ` · ${request.requestedAttendanceStatus}` : ''}</p>
-        <p>
-          {request.reason}
-        </p>
-        {request.reviewerComment && <p><b>Reviewer:</b> {request.reviewerComment}</p>}
-        {admin && request.status === 'PENDING' && <div className="review-controls">
-          <label>Review comment<input maxLength={1000} value={comments[request.id] || ''} onChange={e => setComments({
-              ...comments,
-              [request.id]: e.target.value
-            })} /></label>
-          {[true, false].map(approve => <button key={String(approve)} disabled={busy || !comments[request.id]?.trim()} onClick={() => perform(() => api(`/admin/requests/${request.id}/decision`, {
-            method: 'POST',
-            body: JSON.stringify({
-              approve,
-              comment: comments[request.id]
-            })
-          }), approve ? 'Request approved' : 'Request rejected')}>
-            {approve ? 'Approve' : 'Reject'}
-          </button>)}
-        </div>}
-      </article>)}
-    </section>
+      </form>
+    </Modal>}
   </>;
 }
-function Assistant({
-  configured,
-  month,
-  admin
-}) {
-  const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    setAnswer('');
-    setError('');
-  }, [month]);
-  async function ask(event) {
+export function PayrollPage() {
+  const admin = useAuth().user.role === 'ADMIN';
+  const [params] = useSearchParams();
+  const [employeeId, setEmployeeId] = useState(params.get('employee') || '');
+  const [create, setCreate] = useState(false);
+  const resource = useResource(() => admin ? employeeId ? api(`/admin/employees/${employeeId}/payroll`) : Promise.resolve([]) : api('/me/payroll'), [admin, employeeId]);
+  const action = useAction(resource.reload);
+  async function save(event) {
     event.preventDefault();
-    setBusy(true);
-    setError('');
-    setAnswer('');
-    try {
-      const result = await api('/workspace/assistant', {
-        method: 'POST',
-        body: JSON.stringify({
-          question,
-          month
-        })
-      });
-      setAnswer(result.answer);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
-    }
+    const values = Object.fromEntries(new FormData(event.currentTarget));
+    values.payPeriod += '-01';
+    values.publish = values.publish === 'on';
+    if (await action.perform(() => api(`/admin/employees/${employeeId}/payroll`, {
+      method: 'POST',
+      body: JSON.stringify(values)
+    }), 'Payroll saved')) setCreate(false);
   }
-  return <section className="panel assistant-panel">
-    <h2>Personnel assistant</h2>
-    <p>
-      {admin ? 'Ask about aggregate attendance and published payroll, or draft a reminder.' : 'Ask about your recorded attendance, worked hours and published salary components.'}
-    </p>
-    <p className="ai-notice">When you ask a question, your question and the permitted report for {month} are sent to Google Gemini. Responses may contain mistakes; verify them against the records. The assistant cannot change data.</p>
-    {!configured && <div className="alert">AI is not connected yet. The backend needs its Gemini API key and model setting.</div>}
-    <div className="workspace-actions">
-      {(admin ? ['Summarize attendance this month.', 'Draft a polite missing-certificate reminder.'] : ['Summarize my attendance this month.', 'Explain the components of my payslip.']).map(sample => <button key={sample} onClick={() => setQuestion(sample)}>
-        {sample}
-      </button>)}
+  return <>
+    <Topbar title="Payroll" subtitle={admin ? 'Manage salary records and publish payslips.' : 'Your salary history and payslips.'} actions={admin && employeeId && <button className="btn" onClick={() => setCreate(true)}><Plus size={19} />Add / update payroll</button>} />
+    <div className="content">
+      <Feedback {...action} />
+      {admin && <section className="panel compact">
+        <EmployeePicker value={employeeId} onChange={setEmployeeId} />
+      </section>}
+      {admin && !employeeId ? <PageState title="Choose an employee">Their payroll history will appear here.</PageState> : resource.loading || resource.error ? <ResourceState resource={resource} /> : !resource.data.length ? <PageState title="No payslips yet">Published salary records will appear here.</PageState> : <div className="payslip-grid">
+        {resource.data.map(pay => <article className="panel payslip-card" key={pay.id}>
+          <div className="panelhead">
+            <span className="card-icon">
+              <WalletIcon />
+            </span>
+            <StatusBadge value={pay.status} />
+          </div>
+          <h2>
+            {monthLabel(pay.payPeriod.slice(0, 7))}
+          </h2>
+          <span className="muted">Net pay</span>
+          <strong className="salary-amount">
+            {money(pay.netPay)}
+          </strong>
+          <dl className="salary-details">
+            <div>
+              <dt>Basic pay</dt>
+              <dd>
+                {money(pay.basicPay)}
+              </dd>
+            </div>
+            <div>
+              <dt>Allowances</dt>
+              <dd>
+                {money(pay.allowances)}
+              </dd>
+            </div>
+            <div>
+              <dt>Deductions</dt>
+              <dd>− {money(pay.deductions)}</dd>
+            </div>
+          </dl>
+          {pay.status === 'PUBLISHED' && <a className="btn secondary full-width" href={downloadUrl(`/workspace/payslips/${pay.id}.pdf`)}><ArrowDownToLine size={18} />Download PDF</a>}
+        </article>)}
+      </div>}
     </div>
-    <form onSubmit={ask}>
-      <label htmlFor="question">Your question</label>
-      <textarea id="question" value={question} onChange={e => setQuestion(e.target.value)} maxLength={2000} required rows={4} />
-      <button disabled={!configured || busy || !question.trim()}>
-        {busy ? 'Preparing answer…' : 'Ask assistant'}
-      </button>
-    </form>
-    {error && <div className="alert" role="alert">
-      {error}
-    </div>}
-    {answer && <article className="assistant-answer" aria-live="polite">
-      {answer}
-    </article>}
-  </section>;
+    {create && <Modal title="Add / update payroll" onClose={() => setCreate(false)}>
+      <form className="formgrid" onSubmit={save}>
+        <div className="wide">
+          <Feedback error={action.error} />
+        </div>
+        <label>Pay period<input name="payPeriod" type="month" defaultValue={currentMonth()} required /></label>
+        <label>Basic pay (₹)<input name="basicPay" type="number" min="0" step="0.01" required /></label>
+        <label>Allowances (₹)<input name="allowances" type="number" min="0" step="0.01" defaultValue="0" required /></label>
+        <label>Deductions (₹)<input name="deductions" type="number" min="0" step="0.01" defaultValue="0" required /></label>
+        <label className="checkbox-label wide"><input type="checkbox" name="publish" />Publish payslip for the employee</label>
+        <p className="muted wide">Saving the same month updates its existing record.</p>
+        <button className="btn wide" disabled={action.busy}>Save payroll</button>
+      </form>
+    </Modal>}
+  </>;
+}
+function WalletIcon() {
+  return <FileText size={22} />;
+}
+export function DocumentsPage() {
+  const resource = useResource(() => api('/me/documents'), []);
+  return <>
+    <Topbar title="My documents" subtitle="Photos and certificates shared by your administrator." />
+    <div className="content">
+      {resource.loading || resource.error ? <ResourceState resource={resource} /> : !resource.data.length ? <PageState title="No documents yet">Contact your administrator to add a document.</PageState> : <div className="document-grid">
+        {resource.data.map(document => <a key={document.id} className="panel document-card" href={fileUrl(document.id)} target="_blank" rel="noreferrer">
+          <FileText size={30} />
+          <h2>
+            {document.title}
+          </h2>
+          <p>
+            {humanStatus(document.documentType)}
+          </p>
+          <small>
+            {document.originalName}
+          </small>
+          <span className="text-link">Open document <ArrowRight size={17} /></span>
+        </a>)}
+      </div>}
+    </div>
+  </>;
+}
+export function ReportsPage() {
+  const admin = useAuth().user.role === 'ADMIN';
+  const [month, setMonth] = useState(currentMonth());
+  const resource = useResource(() => api(`/workspace/reports?month=${month}`), [month]);
+  const action = useAction(resource.reload);
+  const report = resource.data;
+  return <>
+    <Topbar title="Reports" subtitle="Monthly totals, clearly presented." actions={<MonthFilter month={month} setMonth={setMonth} />} />
+    <div className="content">
+      <Feedback {...action} />
+      {resource.loading || resource.error ? <ResourceState resource={resource} /> : <>
+        <div className="stats three">
+          <article>
+            <span>Recorded attendance</span>
+            <strong>
+              {report.recordCount}
+            </strong>
+            <small>
+              {monthLabel(month)}
+            </small>
+          </article>
+          <article>
+            <span>Hours worked</span>
+            <strong>
+              {(report.workedMinutes / 60).toFixed(1)}
+            </strong>
+            <small>Completed clock-in sessions</small>
+          </article>
+          <article>
+            <span>Published net pay</span>
+            <strong>
+              {money(report.publishedNetPay)}
+            </strong>
+            <small>{report.payslipCount} payslip(s)</small>
+          </article>
+        </div>
+        <section className="panel">
+          <div className="panelhead">
+            <h2>Attendance breakdown</h2>
+            <div className="actions no-print">
+              <button className="btn secondary" onClick={() => window.print()}><Printer size={18} />Print report</button>
+              {admin && <a className="btn secondary" href={downloadUrl(`/admin/reports/attendance.csv?month=${month}`)}><ArrowDownToLine size={18} />Export CSV</a>}
+            </div>
+          </div>
+          <p className="muted">Recorded days only. Missing entries are not counted as absences.</p>
+          <div className="attendance-chart">
+            {Object.entries(report.attendance).map(([status, count]) => <div className="attendance-bar" key={status}>
+              <span>
+                {humanStatus(status)}
+              </span>
+              <progress value={count} max={Math.max(report.recordCount, 1)} aria-label={humanStatus(status)} />
+              <b>
+                {count}
+              </b>
+            </div>)}
+          </div>
+        </section>
+        {admin && <section className="panel">
+          <div className="panelhead">
+            <h2>Missing certificates</h2>
+            <span className="count-badge">
+              {report.missingCertificates.length}
+            </span>
+          </div>
+          {report.missingCertificates.length ? report.missingCertificates.map(employee => <div className="list-row" key={employee.id}>
+            <span className="avatar small">
+              {employee.name[0]}
+            </span>
+            <div className="grow">
+              <b>
+                {employee.name}
+              </b>
+              <small className="block">
+                {employee.code}
+              </small>
+            </div>
+            <button className="btn secondary" disabled={action.busy} onClick={() => action.perform(() => api(`/admin/employees/${employee.id}/certificate-reminder`, {
+              method: 'POST'
+            }), 'In-app reminder sent')}>Send reminder</button>
+          </div>) : <p>All employees have a certificate on file.</p>}
+        </section>}
+      </>}
+    </div>
+  </>;
+}
+export function NotificationsPage() {
+  const resource = useResource(() => api('/workspace/notifications'), []);
+  const action = useAction(resource.reload);
+  return <>
+    <Topbar title="Notifications" subtitle="Updates that need your attention." />
+    <div className="content narrow">
+      <Feedback {...action} />
+      {resource.loading || resource.error ? <ResourceState resource={resource} /> : !resource.data.length ? <PageState title="You’re all caught up">New updates will appear here.</PageState> : <section className="panel notification-list">
+        {resource.data.map(note => <article className={`notification-row ${note.read ? 'is-read' : ''}`} key={note.id}>
+          <span className="notification-dot" />
+          <div className="grow">
+            <p>
+              {note.message}
+            </p>
+            <small>
+              {new Date(note.createdAt).toLocaleString()}
+            </small>
+          </div>
+          {!note.read && <button className="btn text" disabled={action.busy} onClick={() => action.perform(() => api(`/workspace/notifications/${note.id}/read`, {
+            method: 'POST'
+          }), 'Marked as read')}><Check size={17} />Mark read</button>}
+        </article>)}
+      </section>}
+    </div>
+  </>;
+}
+export function AuditPage() {
+  const resource = useResource(() => api('/admin/audit'), []);
+  return <>
+    <Topbar title="Audit history" subtitle="The latest 100 successful changes." />
+    <div className="content">
+      <section className="panel">
+        {resource.loading || resource.error ? <ResourceState resource={resource} /> : <DataTable rows={resource.data} columns={[{
+          key: 'timestamp',
+          label: 'When',
+          render: row => new Date(row.timestamp).toLocaleString()
+        }, {
+          key: 'actor',
+          label: 'Who',
+          render: row => row.actor?.username || 'System'
+        }, {
+          key: 'action',
+          label: 'Action'
+        }, {
+          key: 'targetId',
+          label: 'Location'
+        }]} />}
+      </section>
+    </div>
+  </>;
 }
