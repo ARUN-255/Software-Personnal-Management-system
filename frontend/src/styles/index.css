@@ -1424,6 +1424,12 @@ tbody tr:hover {
   text-align: center;
   margin: 22px 0 0;
 }
+.auth-reset {
+  display: block;
+  width: fit-content;
+  margin: 18px auto 0;
+  font-size: 14px;
+}
 .password-field {
   position: relative;
   margin-top: -11px;

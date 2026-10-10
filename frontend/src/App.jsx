@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import RequestAccessPage from './pages/RequestAccessPage';
 import AdminDashboard from './pages/AdminDashboard';
 import EmployeeDashboard from './pages/EmployeeDashboard';
@@ -15,6 +16,7 @@ export default function App() {
   return <Routes>
     <Route path="/" element={<HomePage />} />
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/request-access" element={<RequestAccessPage />} />
     <Route element={<Layout role={['ADMIN', 'EMPLOYEE', 'OWNER']} />}>
       <Route path="/account" element={<AccountPage />} />

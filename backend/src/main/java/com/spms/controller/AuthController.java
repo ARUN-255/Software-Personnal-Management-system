@@ -9,6 +9,7 @@ import com.spms.service.AuthService;
 import java.util.*;
 @RestController @RequestMapping("/api/auth") @RequiredArgsConstructor public class AuthController {
     private final AuthService auth;
+    private final com.spms.service.PasswordResetService passwordReset;
     @GetMapping("/csrf") public Map<String, String> csrf(org.springframework.security.web.csrf.CsrfToken token) {
         return Map.of("token", token.getToken());
     }
@@ -24,5 +25,13 @@ import java.util.*;
     @PostMapping("/logout")public void logout(HttpServletRequest r) {
         var s=r.getSession(false);
         if(s!=null)s.invalidate();
+    }
+    @PostMapping("/password-reset/request") public Map<String, String> requestReset(@Valid @RequestBody Dtos.PasswordResetRequest request) {
+        passwordReset.request(request);
+        return Map.of("message", "If the account details match, a reset code has been emailed.");
+    }
+    @PostMapping("/password-reset/confirm") public Map<String, String> confirmReset(@Valid @RequestBody Dtos.PasswordResetConfirm request) {
+        passwordReset.confirm(request);
+        return Map.of("message", "Password reset successfully");
     }
 }

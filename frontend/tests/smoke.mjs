@@ -84,6 +84,8 @@ try {
   await page.getByText('Payroll saved', { exact: true }).waitFor();
   const csv = await api(`/admin/reports/attendance.csv?month=${month}`);
   assert.match(await csv.text(), /EMP-001/);
+  const excel = await api(`/admin/reports/attendance.xlsx?month=${month}`);
+  assert.match(excel.headers()['content-type'], /spreadsheetml/);
   await page.getByRole('link', { name: 'Audit history', exact: true }).click();
   await page.getByRole('heading', { name: 'Audit history', exact: true }).waitFor();
 

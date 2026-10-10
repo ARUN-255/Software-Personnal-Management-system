@@ -10,17 +10,28 @@ import org.springframework.dao.*;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private String message(String english, String language) {
+        if (!"ta".equalsIgnoreCase(language)) return english;
+        return switch (english) {
+            case "Invalid credentials" -> "பயனர்பெயர் அல்லது கடவுச்சொல் தவறானது";
+            case "Record not found" -> "பதிவு கிடைக்கவில்லை";
+            case "Access denied" -> "அணுகல் மறுக்கப்பட்டது";
+            case "The reset code is invalid or expired" -> "மீட்டமைப்புக் குறியீடு தவறானது அல்லது காலாவதியானது";
+            default -> english;
+        };
+    }
     @ExceptionHandler({IllegalArgumentException.class, java.time.format.DateTimeParseException.class,
             MethodArgumentTypeMismatchException.class})
-    ResponseEntity<?> bad(Exception error) {
-        return ResponseEntity.badRequest().body(Map.of("message", Objects.toString(error.getMessage(), "Invalid request")));
+    ResponseEntity<?> bad(Exception error, @RequestHeader(value="X-App-Language", defaultValue="en") String language) {
+        String text = Objects.toString(error.getMessage(), "Invalid request");
+        return ResponseEntity.badRequest().body(Map.of("message", message(text, language)));
     }
     @ExceptionHandler(NoSuchElementException.class)
-    ResponseEntity<?> missing() { return ResponseEntity.status(404).body(Map.of("message", "Record not found")); }
+    ResponseEntity<?> missing(@RequestHeader(value="X-App-Language", defaultValue="en") String language) { return ResponseEntity.status(404).body(Map.of("message", message("Record not found", language))); }
     @ExceptionHandler(AuthenticationException.class)
-    ResponseEntity<?> credentials() { return ResponseEntity.status(401).body(Map.of("message", "Invalid credentials")); }
+    ResponseEntity<?> credentials(@RequestHeader(value="X-App-Language", defaultValue="en") String language) { return ResponseEntity.status(401).body(Map.of("message", message("Invalid credentials", language))); }
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-    ResponseEntity<?> denied() { return ResponseEntity.status(403).body(Map.of("message", "Access denied")); }
+    ResponseEntity<?> denied(@RequestHeader(value="X-App-Language", defaultValue="en") String language) { return ResponseEntity.status(403).body(Map.of("message", message("Access denied", language))); }
     @ExceptionHandler({DataIntegrityViolationException.class, OptimisticLockingFailureException.class})
     ResponseEntity<?> conflict() { return ResponseEntity.status(409).body(Map.of("message", "This record changed or already exists. Refresh and try again.")); }
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -28,6 +28,7 @@ export async function api(path, options = {}) {
       ...(token ? {
         'X-CSRF-TOKEN': token
       } : {}),
+      'X-App-Language': localStorage.getItem('spms-language') || 'en',
       ...options.headers
     }
   });

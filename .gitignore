@@ -12,3 +12,4 @@ backend/uploads/
 **/.env*
 !**/.env.example
 backend/data/
+backend/backups/

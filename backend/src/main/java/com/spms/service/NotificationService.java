@@ -9,12 +9,16 @@ import org.springframework.stereotype.Service;
 public class NotificationService {
     private final NotificationRepository notifications;
     private final UserAccountRepository users;
+    private final EmployeeRepository employees;
+    private final EmailService email;
 
     public void send(String recipient, String message) {
         var notification = new Notification();
         notification.setRecipient(recipient);
         notification.setMessage(message);
         notifications.save(notification);
+        employees.findByUserAccountUsername(recipient).map(Employee::getEmail)
+                .ifPresent(address -> email.send(address, "Bronzera Labs notification", message));
     }
 
     public void notifyAdmins(String message) {

@@ -102,7 +102,7 @@ npm ci
 npm run build
 ```
 
-The GitHub Actions workflow performs these checks and a Chromium browser smoke test covering real sign-in, clock-in/out, leave approval, notifications, CSV export, audit navigation and PDF download. Integration tests cover access control, CSRF, password-hash exclusion, check-in/out rules, leave overlap, single-review enforcement, request/notification isolation, PDF authorization and disabled-AI behavior. Live S3/Gemini calls require your own credentials and are not made by CI.
+The GitHub Actions workflow performs these checks and a Chromium browser smoke test covering real sign-in, clock-in/out, leave approval, paginated notifications, CSV/Excel export, audit navigation and PDF download. Integration tests cover access control, CSRF, password-hash exclusion, check-in/out rules, leave overlap, single-review enforcement, request/notification isolation, PDF authorization and disabled-AI behavior. Live S3/Gemini calls require your own credentials and are not made by CI.
 
 Manual acceptance checks:
 
@@ -115,7 +115,7 @@ Manual acceptance checks:
 
 ## Scope and limitations
 
-Leave is recorded separately from attendance and salary: it does not calculate entitlements, holiday calendars or automatic deductions. Clocking supports same-day shifts only, not overnight shifts, location tracking or biometric proof. Payroll deductions are entered by admins; no tax-compliance calculations are implied. Notifications are in-app, not email/SMS. Audit history records actor, endpoint and time rather than before/after record snapshots. Reports currently scan stored records and suit this mini-project; add database-level aggregation/pagination before large-scale deployment. PDF payslips use a standard Latin font; unsupported characters display as `?`. AI limits are per process; a scaled deployment needs a shared rate limiter. Hibernate schema updates should be replaced with reviewed versioned migrations before a production rollout.
+Leave is recorded separately from attendance and salary: it does not calculate entitlements, holiday calendars or automatic deductions. Clocking supports same-day shifts only, not overnight shifts, location tracking or biometric proof. Payroll deductions are entered by admins; no tax-compliance calculations are implied. Notifications are always in-app and can also be copied to email when SMTP is configured; SMS is not included. Audit history records actor, endpoint and time rather than before/after record snapshots. Reports currently scan stored records and suit this mini-project; add database-level aggregation before large-scale deployment. PDF payslips use a standard Latin font; unsupported characters display as `?`. AI limits are per process; a scaled deployment needs a shared rate limiter. Flyway tracks new schema changes while Hibernate remains in update mode for compatibility with existing student databases.
 
 ## Provider references
 
@@ -130,3 +130,12 @@ Each sidebar item opens its own screen within the scrollable workspace. Mobile n
 ### Language and voice input
 
 Use the language selector in the workspace header to choose English or Tamil. The choice is saved in the browser. The navigation and assistant interface switch language, and Gemini is instructed to reply in the selected language while understanding questions spoken or typed in either language. The microphone transcribes speech into editable text before sending; Chrome provides the broadest Web Speech API support and may ask for microphone permission.
+
+
+## Email, password recovery and backups
+
+Set `MAIL_ENABLED=true` and fill the SMTP values in `backend/.env` to deliver employee notification copies and six-digit password-reset codes. Gmail requires an app password, not the normal account password. The reset response deliberately stays generic so it does not reveal whether an account exists. Codes expire after ten minutes and can be used once.
+
+Create a compressed PostgreSQL backup at any time with `cd backend && bash backup-postgres.sh`. The script reads `.env`, stores backups under the ignored `backend/backups` directory and deletes files older than 14 days. Schedule that command with your operating system only after testing a manual backup and restore.
+
+Flyway records schema versions in `flyway_schema_history`. V1 baselines the original account table and V2 adds password-reset tokens. Existing databases are baselined automatically; keep migration files immutable after deployment.

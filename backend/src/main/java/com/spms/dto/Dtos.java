@@ -10,6 +10,11 @@ public final class Dtos {
     }
     public record ChangePasswordRequest(@NotBlank String currentPassword, @NotBlank @Size(min=12, max=72) String newPassword) {
     }
+    public record PasswordResetRequest(@NotBlank String username, @NotBlank @Email String email) {
+    }
+    public record PasswordResetConfirm(@NotBlank String username, @NotBlank @Pattern(regexp="\\d{6}") String code,
+            @NotBlank @Size(min=12, max=72) String newPassword) {
+    }
     public record AccessRequest(@NotBlank String fullName, @Email String email, @NotBlank String reason) {
     }
     public record EmployeeRequest(@NotBlank String employeeCode, @NotBlank String username, @Size(min=8) String temporaryPassword, @NotBlank String fullName, @Email String email, String phone, String address, LocalDate dateOfBirth, @NotNull UUID departmentId, @NotNull UUID designationId, @NotNull LocalDate joiningDate) {

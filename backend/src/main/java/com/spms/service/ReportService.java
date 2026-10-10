@@ -64,6 +64,33 @@ public class ReportService {
         return csv.toString();
     }
 
+    public byte[] xlsx(YearMonth month) throws Exception {
+        try (var workbook = new org.apache.poi.xssf.usermodel.XSSFWorkbook();
+             var output = new ByteArrayOutputStream()) {
+            var sheet = workbook.createSheet("Attendance " + month);
+            String[] headings = {"Employee code", "Name", "Date", "Status", "Check in", "Check out", "Minutes"};
+            var header = sheet.createRow(0);
+            var style = workbook.createCellStyle();
+            var font = workbook.createFont(); font.setBold(true); style.setFont(font);
+            for (int index = 0; index < headings.length; index++) { header.createCell(index).setCellValue(headings[index]); header.getCell(index).setCellStyle(style); }
+            var rows = attendance.findAll().stream().filter(record -> YearMonth.from(record.getWorkDate()).equals(month))
+                    .sorted(Comparator.comparing(AttendanceRecord::getWorkDate)).toList();
+            for (int index = 0; index < rows.size(); index++) {
+                var record = rows.get(index); var row = sheet.createRow(index + 1);
+                long minutes = record.getCheckedInAt() != null && record.getCheckedOutAt() != null ? Duration.between(record.getCheckedInAt(), record.getCheckedOutAt()).toMinutes() : 0;
+                row.createCell(0).setCellValue(record.getEmployee().getEmployeeCode());
+                row.createCell(1).setCellValue(record.getEmployee().getFullName());
+                row.createCell(2).setCellValue(record.getWorkDate().toString());
+                row.createCell(3).setCellValue(record.getStatus().name());
+                row.createCell(4).setCellValue(record.getCheckedInAt() == null ? "" : record.getCheckedInAt().toString());
+                row.createCell(5).setCellValue(record.getCheckedOutAt() == null ? "" : record.getCheckedOutAt().toString());
+                row.createCell(6).setCellValue(minutes);
+            }
+            for (int index = 0; index < headings.length; index++) sheet.autoSizeColumn(index);
+            workbook.write(output); return output.toByteArray();
+        }
+    }
+
     static String cell(Object value) {
         String text = value == null ? "" : value.toString();
         if (text.stripLeading().matches("^[=+@\\-].*")) text = "'" + text;

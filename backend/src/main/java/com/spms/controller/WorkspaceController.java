@@ -49,8 +49,10 @@ public class WorkspaceController {
     @PostMapping("/api/me/check-out") public AttendanceRecord checkOut(Authentication auth) { return work.clock(auth.getName(), true); }
 
     @GetMapping("/api/workspace/notifications")
-    public List<Notification> notifications(Authentication auth) {
-        return notifications.findTop100ByRecipientOrderByCreatedAtDesc(auth.getName());
+    public org.springframework.data.domain.Page<Notification> notifications(Authentication auth,
+            @RequestParam(defaultValue = "0") int page) {
+        return notifications.findByRecipientOrderByCreatedAtDesc(auth.getName(),
+                org.springframework.data.domain.PageRequest.of(page, 12));
     }
 
     @PostMapping("/api/workspace/notifications/{id}/read")
@@ -69,6 +71,12 @@ public class WorkspaceController {
     public ResponseEntity<String> csv(@RequestParam String month) {
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=attendance.csv")
                 .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8")).body(reports.csv(YearMonth.parse(month)));
+    }
+    @GetMapping("/api/admin/reports/attendance.xlsx")
+    public ResponseEntity<byte[]> xlsx(@RequestParam String month) throws Exception {
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=attendance-" + month + ".xlsx")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(reports.xlsx(YearMonth.parse(month)));
     }
 
     @GetMapping("/api/workspace/payslips/{id}.pdf")
@@ -109,9 +117,9 @@ public class WorkspaceController {
     }
 
     @GetMapping("/api/admin/audit")
-    public List<AuditEvent> audit() {
-        return audit.findAll(org.springframework.data.domain.PageRequest.of(0, 100,
-                org.springframework.data.domain.Sort.by("timestamp").descending())).getContent();
+    public org.springframework.data.domain.Page<AuditEvent> audit(@RequestParam(defaultValue = "0") int page) {
+        return audit.findAll(org.springframework.data.domain.PageRequest.of(page, 20,
+                org.springframework.data.domain.Sort.by("timestamp").descending()));
     }
 
     @PostMapping("/api/admin/employees/{id}/certificate-reminder")

@@ -474,6 +474,7 @@ export function ReportsPage() {
             <div className="actions no-print">
               <button className="btn secondary" onClick={() => window.print()}><Printer size={18} />Print report</button>
               {admin && <a className="btn secondary" href={downloadUrl(`/admin/reports/attendance.csv?month=${month}`)}><ArrowDownToLine size={18} />Export CSV</a>}
+              {admin && <a className="btn secondary" href={downloadUrl(`/admin/reports/attendance.xlsx?month=${month}`)}><ArrowDownToLine size={18} />Export Excel</a>}
             </div>
           </div>
           <p className="muted">Recorded days only. Missing entries are not counted as absences.</p>
@@ -518,14 +519,15 @@ export function ReportsPage() {
   </>;
 }
 export function NotificationsPage() {
-  const resource = useResource(() => api('/workspace/notifications'), []);
+  const [page, setPage] = useState(0);
+  const resource = useResource(() => api(`/workspace/notifications?page=${page}`), [page]);
   const action = useAction(resource.reload);
   return <>
     <Topbar title="Notifications" subtitle="Updates that need your attention." />
     <div className="content narrow">
       <Feedback {...action} />
-      {resource.loading || resource.error ? <ResourceState resource={resource} /> : !resource.data.length ? <PageState title="You’re all caught up">New updates will appear here.</PageState> : <section className="panel notification-list">
-        {resource.data.map(note => <article className={`notification-row ${note.read ? 'is-read' : ''}`} key={note.id}>
+      {resource.loading || resource.error ? <ResourceState resource={resource} /> : !resource.data.content.length ? <PageState title="You’re all caught up">New updates will appear here.</PageState> : <section className="panel notification-list">
+        {resource.data.content.map(note => <article className={`notification-row ${note.read ? 'is-read' : ''}`} key={note.id}>
           <span className="notification-dot" />
           <div className="grow">
             <p>
@@ -539,32 +541,51 @@ export function NotificationsPage() {
             method: 'POST'
           }), 'Marked as read')}><Check size={17} />Mark read</button>}
         </article>)}
+        <Pagination page={page} totalPages={resource.data.totalPages} setPage={setPage} />
       </section>}
     </div>
   </>;
 }
 export function AuditPage() {
-  const resource = useResource(() => api('/admin/audit'), []);
+  const [page, setPage] = useState(0);
+  const resource = useResource(() => api(`/admin/audit?page=${page}`), [page]);
   return <>
     <Topbar title="Audit history" subtitle="The latest 100 successful changes." />
     <div className="content">
       <section className="panel">
-        {resource.loading || resource.error ? <ResourceState resource={resource} /> : <DataTable rows={resource.data} columns={[{
-          key: 'timestamp',
-          label: 'When',
-          render: row => new Date(row.timestamp).toLocaleString()
-        }, {
-          key: 'actor',
-          label: 'Who',
-          render: row => row.actor?.username || 'System'
-        }, {
-          key: 'action',
-          label: 'Action'
-        }, {
-          key: 'targetId',
-          label: 'Location'
-        }]} />}
+        {resource.loading || resource.error ? <ResourceState resource={resource} /> : <>
+          <DataTable rows={resource.data.content} columns={[{
+            key: 'timestamp',
+            label: 'When',
+            render: row => new Date(row.timestamp).toLocaleString()
+          }, {
+            key: 'actor',
+            label: 'Who',
+            render: row => row.actor?.username || 'System'
+          }, {
+            key: 'action',
+            label: 'Action'
+          }, {
+            key: 'targetId',
+            label: 'Location'
+          }]} />
+          <Pagination page={page} totalPages={resource.data.totalPages} setPage={setPage} />
+        </>}
       </section>
     </div>
   </>;
+}
+function Pagination({
+  page,
+  totalPages,
+  setPage
+}) {
+  if (totalPages <= 1) return null;
+  return <div className="pagination">
+    <span>Page {page + 1} of {totalPages}</span>
+    <div className="actions">
+      <button className="btn secondary" disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button>
+      <button className="btn secondary" disabled={page + 1 >= totalPages} onClick={() => setPage(page + 1)}>Next</button>
+    </div>
+  </div>;
 }
