@@ -264,28 +264,6 @@ button {
   font-weight: 400;
   opacity: .8;
 }
-.brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  font-size: 21px;
-  font-weight: 800;
-  background: #fff;
-  color: #075b32;
-  width: 31px;
-  height: 33px;
-  border-radius: 5px;
-  margin-right: 3px;
-}
-.brand-mark > span {
-  width: 5px;
-  height: 5px;
-  background: #15ae5c;
-  position: absolute;
-  right: -3px;
-  bottom: 4px;
-}
 .header-divider {
   width: 1px;
   height: 26px;
@@ -1278,10 +1256,6 @@ tbody tr:hover {
   padding: 23px 7%;
   border-bottom: 1px solid var(--line);
 }
-.public-header .brand-mark {
-  background: #087443;
-  color: #fff;
-}
 .landing {
   min-height: 100dvh;
   background: #fff;
@@ -1409,10 +1383,6 @@ tbody tr:hover {
   font-size: 22px;
   font-weight: 650;
   margin-bottom: 30px;
-}
-.auth-brand .brand-mark {
-  background: #087443;
-  color: #fff;
 }
 .authcard {
   width: 440px;
@@ -1881,11 +1851,6 @@ tbody tr:hover {
     font-size: 17px;
     gap: 6px;
   }
-  .brand-mark {
-    width: 26px;
-    height: 28px;
-    font-size: 18px;
-  }
   .header-account > svg {
     display: none;
   }
@@ -2143,5 +2108,122 @@ tbody tr:hover {
   .panel {
     box-shadow: none;
     break-inside: avoid;
+  }
+}
+/* Refined green workspace and conversational assistant */ .desktop-sidebar {
+  border-right-color: #17613f;
+  background: #07452f;
+}
+.sidebar-label {
+  color: #a8c9b7;
+}
+.sidebar nav a {
+  color: #f0f7f3;
+  font-size: 15px;
+}
+.sidebar nav a:hover {
+  background: #10583c;
+}
+.sidebar nav a.active {
+  background: #fff;
+  color: #075a38;
+  border-left-color: #34c76f;
+}
+.sidebar nav a svg {
+  color: #b9d5c5;
+}
+.sidebar nav a.active svg {
+  color: #087443;
+}
+.tiny-badge {
+  border-color: #80b395;
+  color: inherit;
+}
+.sidebar-bottom nav, .sidebar-user {
+  border-color: #39715a;
+}
+.sidebar-user {
+  color: #fff;
+}
+.byline {
+  color: #a8c9b7;
+}
+.navigation-dialog {
+  color: #fff;
+  background: #07452f;
+}
+.drawer-heading {
+  border-bottom-color: #39715a;
+  background: #063e2a;
+}
+.language-control select {
+  min-height: 38px;
+  width: auto;
+  padding: 7px 28px 7px 11px;
+  border: 1px solid #4d8067;
+  border-radius: 8px;
+  background: #124f38;
+  color: #fff;
+  font-size: 14px;
+}
+.prompt-grid b {
+  font-size: 15px;
+}
+.prompt-grid span {
+  font-size: 14px;
+  color: #53645a;
+}
+.chat-composer {
+  border-radius: 28px;
+  padding: 16px 18px 13px;
+}
+.chat-composer textarea {
+  font-size: 16px;
+}
+.send-button {
+  border-radius: 50%;
+}
+.composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.voice-button {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: #edf5f0;
+  color: #075f39;
+}
+.voice-button:hover, .voice-button.listening {
+  background: #d9efe1;
+}
+.voice-button.listening {
+  color: #b42318;
+  animation: pulse 1.2s infinite;
+}
+.message-bubble {
+  padding: 15px 18px;
+  border: 1px solid #e2e9e4;
+  border-radius: 20px;
+  background: #fff;
+}
+.message-bubble p, .answer-text li {
+  font-size: 16px;
+}
+.chat-message.user .message-bubble {
+  border-radius: 20px 6px 20px 20px;
+}
+@media (max-width: 720px) {
+  .language-control select {
+    max-width: 82px;
+    padding-inline: 8px;
+  }
+  .chat-composer {
+    border-radius: 22px;
   }
 }

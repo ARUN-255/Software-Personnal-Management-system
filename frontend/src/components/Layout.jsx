@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation, Link } from 'react-router-dom';
 import { Bell, Menu, X, ChevronRight } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 export default function Layout({
   role
 }) {
@@ -11,6 +12,10 @@ export default function Layout({
     loading
   } = useAuth();
   const [open, setOpen] = useState(false);
+  const {
+    language,
+    setLanguage
+  } = useLanguage();
   const location = useLocation();
   const main = useRef(null);
   const menu = useRef(null);
@@ -40,10 +45,17 @@ export default function Layout({
       <button ref={menu} className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={open} onClick={() => setOpen(true)}>
         <Menu />
       </button>
-      <Link to={dashboard} className="wordmark"><span className="brand-mark">B<span /></span>Bronzera<span className="wordmark-light">Labs</span></Link>
+      <Link to={dashboard} className="wordmark">Bronzera<span className="wordmark-light">Labs</span></Link>
       <span className="header-divider" />
       <span className="header-workspace">Workspace</span>
       <div className="header-right">
+        <label className="language-control">
+          <span className="sr-only">Interface language</span>
+          <select aria-label="Interface language" value={language} onChange={event => setLanguage(event.target.value)}>
+            <option value="en">English</option>
+            <option value="ta">தமிழ்</option>
+          </select>
+        </label>
         {user.role !== 'OWNER' && <Link className="icon-button" to="/notifications" aria-label="Notifications">
           <Bell size={21} />
         </Link>}

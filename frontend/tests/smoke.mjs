@@ -119,16 +119,35 @@ try {
   });
   await navigate('AI assistant');
   await page.getByRole('heading', { name: 'What can I help you with?' }).waitFor();
+  await page.evaluate(() => {
+    window.webkitSpeechRecognition = class {
+      start() {
+        this.onstart?.();
+        this.onresult?.({ results: [{ 0: { transcript: 'voice attendance question' } }] });
+        this.onend?.();
+      }
+      stop() { this.onend?.(); }
+      abort() { this.onend?.(); }
+    };
+  });
+  await page.getByRole('button', { name: 'Start voice input' }).click();
+  await page.getByLabel('Message the assistant').waitFor({ state: 'visible' });
+  assert.equal(await page.getByLabel('Message the assistant').inputValue(), 'voice attendance question');
+  await page.getByLabel('Message the assistant').fill('');
   console.log('UI_PREVIEW_CHAT=' + (await page.screenshot({ type: 'jpeg', quality: 55 })).toString('base64'));
   await page.getByLabel('Message the assistant').fill('Summarize attendance this month.');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await page.getByRole('button', { name: 'Copy answer', exact: true }).waitFor();
+  await page.getByLabel('Interface language').selectOption('ta');
+  await page.getByRole('link', { name: 'AI உதவியாளர்', exact: true }).waitFor();
   await page.getByLabel('Message the assistant').fill('Explain the missing entries.');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await page.waitForFunction(() => document.querySelectorAll('.chat-message.assistant').length === 2);
   assert.equal(conversations[1].history.length, 2);
   assert.deepEqual(conversations[1].history.map(turn => turn.role), ['user', 'model']);
+  assert.equal(conversations[1].language, 'ta');
   assert.equal(await page.locator('.answer-text strong').first().textContent(), 'Attendance overview');
+  await page.getByLabel('Interface language').selectOption('en');
   await page.getByRole('button', { name: 'New chat', exact: true }).click();
   await page.getByRole('heading', { name: 'What can I help you with?' }).waitFor();
 

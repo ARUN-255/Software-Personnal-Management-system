@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUp, Check, Copy, MessageSquarePlus, Sparkles, Square, ChartNoAxesCombined, FileText, Wallet } from 'lucide-react';
+import { ArrowUp, Check, Copy, MessageSquarePlus, Sparkles, Square, ChartNoAxesCombined, FileText, Wallet, Mic, MicOff } from 'lucide-react';
 import { api } from '../api/client';
 import { currentMonth, monthLabel } from '../api/format';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useResource } from '../hooks/useResource';
 import { MonthFilter } from './WorkspacePage';
 function InlineText({
@@ -41,6 +42,10 @@ export default function AssistantPage() {
   const {
     user
   } = useAuth();
+  const {
+    language,
+    tamil
+  } = useLanguage();
   const status = useResource(() => api('/workspace/assistant/status'), []);
   const [month, setMonth] = useState(currentMonth());
   const [messages, setMessages] = useState([]);
@@ -48,12 +53,14 @@ export default function AssistantPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(null);
+  const [listening, setListening] = useState(false);
   const bottom = useRef(null);
   const input = useRef(null);
   const controller = useRef(null);
+  const recognition = useRef(null);
   const sequence = useRef(0);
   const admin = user.role === 'ADMIN';
-  const suggestions = [[ChartNoAxesCombined, 'Attendance overview', admin ? 'Summarize attendance this month.' : 'Summarize my attendance this month.'], [Wallet, 'Understand payroll', admin ? 'Summarize published payroll for this month.' : 'Explain the components of my payslip.'], [FileText, 'Draft a reminder', 'Draft a polite missing-certificate reminder.']];
+  const suggestions = tamil ? [[ChartNoAxesCombined, 'வருகைப் பதிவு', admin ? 'இந்த மாத வருகைப் பதிவை சுருக்கமாகக் கூறுங்கள்.' : 'இந்த மாத எனது வருகைப் பதிவை சுருக்கமாகக் கூறுங்கள்.'], [Wallet, 'சம்பள விவரம்', admin ? 'இந்த மாத வெளியிடப்பட்ட சம்பளத்தை சுருக்கமாகக் கூறுங்கள்.' : 'எனது சம்பளச் சீட்டின் பகுதிகளை விளக்குங்கள்.'], [FileText, 'நினைவூட்டல்', 'சான்றிதழ் சமர்ப்பிக்க ஒரு மரியாதையான நினைவூட்டலை எழுதுங்கள்.']] : [[ChartNoAxesCombined, 'Attendance overview', admin ? 'Summarize attendance this month.' : 'Summarize my attendance this month.'], [Wallet, 'Understand payroll', admin ? 'Summarize published payroll for this month.' : 'Explain the components of my payslip.'], [FileText, 'Draft a reminder', 'Draft a polite missing-certificate reminder.']];
   useEffect(() => {
     bottom.current?.scrollIntoView({
       block: 'end',
@@ -64,6 +71,40 @@ export default function AssistantPage() {
     sequence.current++;
     controller.current?.abort();
   }, []);
+  function startVoice() {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Recognition) {
+      setError(tamil ? 'இந்த உலாவியில் குரல் உள்ளீடு கிடைக்கவில்லை. Chrome பயன்படுத்தவும்.' : 'Voice input is unavailable in this browser. Try Chrome.');
+      return;
+    }
+    recognition.current?.abort();
+    const speech = new Recognition();
+    recognition.current = speech;
+    speech.lang = language === 'ta' ? 'ta-IN' : 'en-IN';
+    speech.interimResults = true;
+    speech.continuous = false;
+    const original = draft.trim();
+    speech.onstart = () => {
+      setListening(true);
+      setError('');
+    };
+    speech.onresult = event => {
+      const words = Array.from(event.results).map(result => result[0].transcript).join('');
+      setDraft(`${original}${original && words ? ' ' : ''}${words}`);
+    };
+    speech.onerror = event => {
+      if (event.error !== 'aborted') setError(tamil ? 'குரலைப் புரிந்துகொள்ள முடியவில்லை. மீண்டும் முயற்சிக்கவும்.' : 'I could not understand the voice input. Please try again.');
+    };
+    speech.onend = () => {
+      setListening(false);
+      input.current?.focus();
+    };
+    speech.start();
+  }
+  function stopVoice() {
+    recognition.current?.stop();
+    setListening(false);
+  }
   function reset(nextMonth = month) {
     sequence.current++;
     controller.current?.abort();
@@ -106,7 +147,8 @@ export default function AssistantPage() {
         body: JSON.stringify({
           question,
           month,
-          history
+          history,
+          language
         })
       });
       if (requestId !== sequence.current) return;
@@ -145,15 +187,21 @@ export default function AssistantPage() {
           <Sparkles size={22} />
         </span>
         <div>
-          <h1>AI assistant</h1>
-          <p>Your workspace, explained.</p>
+          <h1>
+            {tamil ? 'AI உதவியாளர்' : 'AI assistant'}
+          </h1>
+          <p>
+            {tamil ? 'உங்கள் பணியிடத்தை எளிதாகப் புரிந்துகொள்ளுங்கள்.' : 'Your workspace, explained.'}
+          </p>
         </div>
       </div>
       <div className="actions">
         <MonthFilter month={month} setMonth={reset} />
         <button className="btn secondary" onClick={() => reset()} disabled={busy || !messages.length}>
           <MessageSquarePlus size={18} />
-          <span>New chat</span>
+          <span>
+            {tamil ? 'புதிய உரையாடல்' : 'New chat'}
+          </span>
         </button>
       </div>
     </header>
@@ -162,9 +210,13 @@ export default function AssistantPage() {
         <span className="welcome-symbol">
           <Sparkles size={34} />
         </span>
-        <span className="eyebrow">BRONZERA ASSISTANT</span>
-        <h2>What can I help you with?</h2>
-        <p>Ask about attendance, payroll or your next task.</p>
+        <span className="eyebrow">AI ASSISTANT</span>
+        <h2>
+          {tamil ? 'நான் உங்களுக்கு எப்படி உதவலாம்?' : 'What can I help you with?'}
+        </h2>
+        <p>
+          {tamil ? 'வருகை, சம்பளம் அல்லது உங்கள் அடுத்த பணியைப் பற்றிக் கேளுங்கள்.' : 'Ask about attendance, payroll or your next task.'}
+        </p>
         <div className="prompt-grid">
           {suggestions.map(([Icon, title, prompt]) => <button key={title} onClick={() => {
             setDraft(prompt);
@@ -187,7 +239,7 @@ export default function AssistantPage() {
           </span>
           <div className="message-content">
             <span className="message-author">
-              {message.role === 'assistant' ? 'Bronzera assistant' : 'You'}
+              {message.role === 'assistant' ? tamil ? 'AI உதவியாளர்' : 'AI assistant' : tamil ? 'நீங்கள்' : 'You'}
             </span>
             <div className="message-bubble">
               {message.role === 'assistant' ? <Answer text={message.text} /> : <p>
@@ -196,7 +248,7 @@ export default function AssistantPage() {
             </div>
             {message.role === 'assistant' && <button className="copy-answer" onClick={() => copy(message)} aria-label="Copy answer">
               {copied === message.id ? <Check size={15} /> : <Copy size={15} />}
-              {copied === message.id ? 'Copied' : 'Copy'}
+              {copied === message.id ? tamil ? 'நகலெடுக்கப்பட்டது' : 'Copied' : tamil ? 'நகலெடு' : 'Copy'}
             </button>}
             {message.state === 'failed' && <small className="muted">Not answered</small>}
           </div>
@@ -209,7 +261,9 @@ export default function AssistantPage() {
             <span />
             <span />
             <span />
-            <small>Preparing your answer</small>
+            <small>
+              {tamil ? 'பதிலைத் தயாரிக்கிறது' : 'Preparing your answer'}
+            </small>
           </div>
         </div>}
       </div>}
@@ -220,10 +274,12 @@ export default function AssistantPage() {
         {error || status.error}
         {status.error && <button className="btn text" onClick={status.reload}>Retry connection</button>}
       </div>}
-      {status.data && !status.data.configured && <div className="info-note">AI is not connected yet. Ask your administrator to complete the setup.</div>}
+      {status.data && !status.data.configured && <div className="info-note">
+        {tamil ? 'AI இன்னும் இணைக்கப்படவில்லை. அமைப்பை முடிக்க நிர்வாகியிடம் கேளுங்கள்.' : 'AI is not connected yet. Ask your administrator to complete the setup.'}
+      </div>}
       <form className="chat-composer" onSubmit={send}>
         <label className="sr-only" htmlFor="chat-message">Message the assistant</label>
-        <textarea ref={input} id="chat-message" rows={2} placeholder="Ask anything about your workspace…" value={draft} maxLength={2000} onChange={event => setDraft(event.target.value)} onKeyDown={event => {
+        <textarea ref={input} id="chat-message" rows={2} placeholder={tamil ? 'உங்கள் பணியிடத்தைப் பற்றி கேளுங்கள்…' : 'Ask anything about your workspace…'} value={draft} maxLength={2000} onChange={event => setDraft(event.target.value)} onKeyDown={event => {
           if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault();
             event.currentTarget.form.requestSubmit();
@@ -234,14 +290,21 @@ export default function AssistantPage() {
             <span className="connection-dot" />
             {monthLabel(month)}
           </span>
-          {busy ? <button type="button" className="send-button" aria-label="Stop response" onClick={() => controller.current?.abort()}>
-            <Square size={17} />
-          </button> : <button type="submit" className="send-button" aria-label="Send message" disabled={!draft.trim() || !status.data?.configured}>
-            <ArrowUp size={23} />
-          </button>}
+          <div className="composer-actions">
+            <button type="button" className={`voice-button ${listening ? 'listening' : ''}`} aria-label={listening ? 'Stop voice input' : 'Start voice input'} title={tamil ? 'குரல் மூலம் உள்ளிடவும்' : 'Type with your voice'} onClick={listening ? stopVoice : startVoice}>
+              {listening ? <MicOff size={20} /> : <Mic size={20} />}
+            </button>
+            {busy ? <button type="button" className="send-button" aria-label="Stop response" onClick={() => controller.current?.abort()}>
+              <Square size={17} />
+            </button> : <button type="submit" className="send-button" aria-label="Send message" disabled={!draft.trim() || !status.data?.configured}>
+              <ArrowUp size={23} />
+            </button>}
+          </div>
         </div>
       </form>
-      <p className="chat-disclaimer">AI can make mistakes. Check important details. <span>Your question and permitted report are shared with Gemini.</span></p>
+      <p className="chat-disclaimer">{tamil ? 'AI தவறு செய்யலாம். முக்கிய விவரங்களைச் சரிபார்க்கவும்.' : 'AI can make mistakes. Check important details.'} <span>
+          {tamil ? 'உங்கள் கேள்வியும் அனுமதிக்கப்பட்ட அறிக்கையும் Gemini உடன் பகிரப்படும்.' : 'Your question and permitted report are shared with Gemini.'}
+        </span></p>
     </footer>
   </section>;
 }

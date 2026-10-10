@@ -126,3 +126,7 @@ Leave is recorded separately from attendance and salary: it does not calculate e
 ## Redesigned workspace
 
 Each sidebar item opens its own screen within the scrollable workspace. Mobile navigation opens from the menu button. The AI assistant supports follow-up questions, safe formatted answers, stop, copy and new chat. Chat history lasts only while that screen remains open; changing month starts a new conversation. Keep the existing backend environment configuration and restart both servers after updating.
+
+### Language and voice input
+
+Use the language selector in the workspace header to choose English or Tamil. The choice is saved in the browser. The navigation and assistant interface switch language, and Gemini is instructed to reply in the selected language while understanding questions spoken or typed in either language. The microphone transcribes speech into editable text before sending; Chrome provides the broadest Web Speech API support and may ask for microphone permission.

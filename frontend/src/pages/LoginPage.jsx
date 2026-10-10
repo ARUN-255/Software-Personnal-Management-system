@@ -28,7 +28,7 @@ export default function LoginPage() {
     }
   }
   return <div className="auth">
-    <div className="auth-brand"><span className="brand-mark">B<span /></span>Bronzera Labs</div>
+    <div className="auth-brand">Bronzera Labs</div>
     <section className="authcard">
       <Link to="/" className="back"><ArrowLeft size={18} />Back to home</Link>
       <span className="eyebrow">{params.get('role') || 'WORKSPACE'} SIGN IN</span>

@@ -3,7 +3,7 @@ import { ArrowRight, ShieldCheck, UserRound, Check, CalendarDays, Wallet, Users 
 export default function HomePage() {
   return <div className="landing">
     <header className="public-header">
-      <Link to="/" className="wordmark"><span className="brand-mark">B<span /></span>Bronzera<span className="wordmark-light">Labs</span></Link>
+      <Link to="/" className="wordmark">Bronzera<span className="wordmark-light">Labs</span></Link>
       <Link className="btn secondary" to="/login">Sign in <ArrowRight size={17} /></Link>
     </header>
     <main className="landing-main">
