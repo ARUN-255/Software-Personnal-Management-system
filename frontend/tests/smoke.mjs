@@ -120,7 +120,7 @@ try {
   await navigate('AI assistant');
   await page.getByRole('heading', { name: 'What can I help you with?' }).waitFor();
   await page.evaluate(() => {
-    window.webkitSpeechRecognition = class {
+    const MockSpeechRecognition = class {
       start() {
         this.onstart?.();
         this.onresult?.({ results: [{ 0: { transcript: 'voice attendance question' } }] });
@@ -129,9 +129,11 @@ try {
       stop() { this.onend?.(); }
       abort() { this.onend?.(); }
     };
+    window.SpeechRecognition = MockSpeechRecognition;
+    window.webkitSpeechRecognition = MockSpeechRecognition;
   });
   await page.getByRole('button', { name: 'Start voice input' }).click();
-  await page.getByLabel('Message the assistant').waitFor({ state: 'visible' });
+  await page.waitForFunction(() => document.querySelector('#chat-message')?.value === 'voice attendance question');
   assert.equal(await page.getByLabel('Message the assistant').inputValue(), 'voice attendance question');
   await page.getByLabel('Message the assistant').fill('');
   console.log('UI_PREVIEW_CHAT=' + (await page.screenshot({ type: 'jpeg', quality: 55 })).toString('base64'));
