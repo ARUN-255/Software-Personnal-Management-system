@@ -18,11 +18,13 @@ public class AssistantService {
     private final Map<String, Instant> lastRequest = new ConcurrentHashMap<>();
     private final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
 
-    public boolean configured() { return !key.isBlank() && !model.isBlank(); }
+    // The assistant remains available during presentations because a local,
+    // data-only fallback is used whenever Gemini cannot be reached.
+    public boolean configured() { return true; }
 
     public String answer(String username, String question, Map<String, Object> context, String language, List<Map<String, String>> history) throws Exception {
-        if (!configured()) throw new IllegalArgumentException("AI is not configured. Add GEMINI_API_KEY and GEMINI_MODEL on the backend.");
-        if (!model.matches("[a-zA-Z0-9._-]+")) throw new IllegalArgumentException("Invalid Gemini model setting");
+        if (key.isBlank() || model.isBlank() || !model.matches("[a-zA-Z0-9._-]+"))
+            return fallback(question, context, language);
         Instant now = Instant.now();
         synchronized (lastRequest) {
             lastRequest.entrySet().removeIf(e -> e.getValue().isBefore(now.minusSeconds(60)));
@@ -56,17 +58,39 @@ public class AssistantService {
                 .header("x-goog-api-key", key).POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(payload))).build();
         HttpResponse<String> response;
         try { response = client.send(request, HttpResponse.BodyHandlers.ofString()); }
-        catch (java.io.IOException e) { throw new IllegalArgumentException("AI service is temporarily unreachable. Please try again."); }
-        if (response.statusCode() == 503)
-            throw new IllegalArgumentException("Gemini is temporarily busy. Please try again in a moment.");
-        if (response.statusCode() == 429)
-            throw new IllegalArgumentException("Gemini's usage limit has been reached. Wait before retrying or check your API quota.");
-        if (response.statusCode() != 200)
-            throw new IllegalArgumentException("AI provider returned an error (" + response.statusCode() + "). Check the key, model and quota in your backend configuration.");
+        catch (java.io.IOException e) { return fallback(question, context, language); }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); return fallback(question, context, language); }
+        if (response.statusCode() != 200) return fallback(question, context, language);
         var parts = json.readTree(response.body()).path("candidates").path(0).path("content").path("parts");
         var answer = new StringBuilder();
         parts.forEach(part -> { if (!part.path("thought").asBoolean(false)) answer.append(part.path("text").asText("")); });
-        if (answer.isEmpty()) throw new IllegalArgumentException("AI returned no answer. Try rephrasing your question.");
+        if (answer.isEmpty()) return fallback(question, context, language);
         return answer.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    private String fallback(String question, Map<String, Object> context, String language) {
+        String month = Objects.toString(context.getOrDefault("month", "selected month"));
+        Map<String, Object> attendance = context.get("attendance") instanceof Map<?, ?> map
+                ? (Map<String, Object>) map : Map.of();
+        Object present = attendance.getOrDefault("PRESENT", 0);
+        Object absent = attendance.getOrDefault("ABSENT", 0);
+        Object halfDay = attendance.getOrDefault("HALF_DAY", 0);
+        Object holiday = attendance.getOrDefault("HOLIDAY", 0);
+        Object records = context.getOrDefault("recordCount", 0);
+        Object minutes = context.getOrDefault("workedMinutes", 0);
+        boolean tamil = "ta".equals(language);
+        if (tamil) {
+            return "*Gemini கிடைக்காததால் உள்ளூர் தரவிலிருந்து பதில் வழங்கப்படுகிறது.*\n\n"
+                    + "**" + month + " வருகைப் பதிவு சுருக்கம்**\n\n"
+                    + "- வருகை: " + present + "\n- வரவில்லை: " + absent
+                    + "\n- அரை நாள்: " + halfDay + "\n- விடுமுறை: " + holiday
+                    + "\n- மொத்த பதிவுகள்: " + records + "\n- பணிநேர நிமிடங்கள்: " + minutes;
+        }
+        return "*Offline fallback: Gemini is unavailable, so this answer uses the local attendance data.*\n\n"
+                + "**Attendance overview for " + month + "**\n\n"
+                + "- Present: " + present + "\n- Absent: " + absent
+                + "\n- Half day: " + halfDay + "\n- Holiday: " + holiday
+                + "\n- Total records: " + records + "\n- Worked minutes: " + minutes;
     }
 }
