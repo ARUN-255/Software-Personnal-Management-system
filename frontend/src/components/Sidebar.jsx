@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, CalendarDays, CalendarCheck, Wallet, FolderOpen, MessageSquare, Bell, ChartNoAxesCombined, ShieldCheck, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarDays, MessageSquare, ShieldCheck, Settings, LogOut } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -23,23 +23,15 @@ export default function Sidebar({
     dashboard: 'முகப்பு',
     employees: 'ஊழியர்கள்',
     attendance: 'வருகைப் பதிவு',
-    requests: 'விடுப்பு & கோரிக்கைகள்',
-    payroll: 'சம்பளம்',
-    documents: 'எனது ஆவணங்கள்',
-    reports: 'அறிக்கைகள்',
     assistant: 'AI உதவியாளர்'
   } : {
     access: 'Access requests',
     dashboard: 'Dashboard',
     employees: 'Employees',
     attendance: 'Attendance',
-    requests: 'Leave & requests',
-    payroll: 'Payroll',
-    documents: 'My documents',
-    reports: 'Reports',
     assistant: 'AI assistant'
   };
-  const links = owner ? [['/owner', labels.access, ShieldCheck]] : [[admin ? '/admin' : '/employee', labels.dashboard, LayoutDashboard], ...(admin ? [['/admin/employees', labels.employees, Users]] : []), ['/attendance', labels.attendance, CalendarDays], ['/requests', labels.requests, CalendarCheck], ['/payroll', labels.payroll, Wallet], ...(!admin ? [['/documents', labels.documents, FolderOpen]] : []), ['/reports', labels.reports, ChartNoAxesCombined], ['/assistant', labels.assistant, MessageSquare]];
+  const links = owner ? [['/owner', labels.access, ShieldCheck]] : [[admin ? '/admin' : '/employee', labels.dashboard, LayoutDashboard], ...(admin ? [['/admin/employees', labels.employees, Users]] : []), ['/attendance', labels.attendance, CalendarDays], ['/assistant', labels.assistant, MessageSquare]];
   async function signOut() {
     setBusy(true);
     try {
@@ -65,14 +57,6 @@ export default function Sidebar({
     </nav>
     <div className="sidebar-bottom">
       <nav aria-label="Account navigation">
-        {!owner && <NavLink to="/notifications" onClick={onNavigate}>
-          <Bell size={20} />
-          {tamil ? 'அறிவிப்புகள்' : 'Notifications'}
-        </NavLink>}
-        {admin && <NavLink to="/audit" onClick={onNavigate}>
-          <ShieldCheck size={20} />
-          {tamil ? 'தணிக்கை வரலாறு' : 'Audit history'}
-        </NavLink>}
         <NavLink to="/account" onClick={onNavigate}>
           <Settings size={20} />
           {tamil ? 'கணக்கு அமைப்புகள்' : 'Account settings'}
