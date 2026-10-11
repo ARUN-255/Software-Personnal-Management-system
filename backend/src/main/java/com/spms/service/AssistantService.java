@@ -30,7 +30,7 @@ public class AssistantService {
             lastRequest.entrySet().removeIf(e -> e.getValue().isBefore(now.minusSeconds(60)));
             Instant previous = lastRequest.get(username);
             if (previous != null && previous.plusSeconds(10).isAfter(now))
-                throw new IllegalArgumentException("Please wait 10 seconds before another AI request");
+                return fallback(question, context, language);
             lastRequest.put(username, now);
         }
         String system = "You are the Bronzera Labs personnel assistant. Answer only from the supplied authorized context. "
