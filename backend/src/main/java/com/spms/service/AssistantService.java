@@ -58,9 +58,16 @@ public class AssistantService {
                 .header("x-goog-api-key", key).POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(payload))).build();
         HttpResponse<String> response;
         try { response = client.send(request, HttpResponse.BodyHandlers.ofString()); }
-        catch (java.io.IOException e) { return fallback(question, context, language); }
+        catch (java.io.IOException e) {
+            System.err.println("Gemini fallback: network error - " + e.getMessage());
+            return fallback(question, context, language);
+        }
         catch (InterruptedException e) { Thread.currentThread().interrupt(); return fallback(question, context, language); }
-        if (response.statusCode() != 200) return fallback(question, context, language);
+        if (response.statusCode() != 200) {
+            String providerMessage = json.readTree(response.body()).path("error").path("message").asText("No details");
+            System.err.println("Gemini fallback: HTTP " + response.statusCode() + " - " + providerMessage);
+            return fallback(question, context, language);
+        }
         var parts = json.readTree(response.body()).path("candidates").path(0).path("content").path("parts");
         var answer = new StringBuilder();
         parts.forEach(part -> { if (!part.path("thought").asBoolean(false)) answer.append(part.path("text").asText("")); });
@@ -70,6 +77,7 @@ public class AssistantService {
 
     @SuppressWarnings("unchecked")
     private String fallback(String question, Map<String, Object> context, String language) {
+        String topic = question.toLowerCase(Locale.ROOT);
         String month = Objects.toString(context.getOrDefault("month", "selected month"));
         Map<String, Object> attendance = context.get("attendance") instanceof Map<?, ?> map
                 ? (Map<String, Object>) map : Map.of();
@@ -79,18 +87,47 @@ public class AssistantService {
         Object holiday = attendance.getOrDefault("HOLIDAY", 0);
         Object records = context.getOrDefault("recordCount", 0);
         Object minutes = context.getOrDefault("workedMinutes", 0);
+        Object employees = context.getOrDefault("employeeCount", "available in the Employees page");
         boolean tamil = "ta".equals(language);
         if (tamil) {
-            return "*Gemini கிடைக்காததால் உள்ளூர் தரவிலிருந்து பதில் வழங்கப்படுகிறது.*\n\n"
+            String note = "*Gemini கிடைக்காததால் பாதுகாப்பான உள்ளூர் பதில் வழங்கப்படுகிறது.*\n\n";
+            if (containsAny(topic, "salary", "payroll", "payslip", "சம்பளம்", "ஊதியம்"))
+                return note + "சம்பளம் மற்றும் payslip அம்சங்கள் இந்த எளிய mini project பதிப்பில் சேர்க்கப்படவில்லை.";
+            if (containsAny(topic, "employee", "staff", "team", "ஊழிய", "பணியாளர்"))
+                return note + "**ஊழியர் சுருக்கம்**\n\nமொத்த ஊழியர்கள்: " + employees
+                        + "\n\nமுழு விவரங்களை **ஊழியர்கள்** பக்கத்தில் பார்க்கலாம்.";
+            if (containsAny(topic, "profile", "photo", "details", "சுயவிவரம்", "புகைப்படம்", "விவர"))
+                return note + "Admin, **ஊழியர்கள்** பக்கத்தில் ஒருவரின் சுயவிவரத்தைத் திறந்து அவரின் விவரங்களையும் உள்ளூரில் சேமிக்கப்படும் புகைப்படத்தையும் நிர்வகிக்கலாம்.";
+            if (containsAny(topic, "help", "feature", "what can", "உதவி", "அம்ச"))
+                return note + "இந்த அமைப்பில் ஊழியர் சுயவிவரங்கள், உள்ளூர் புகைப்பட சேமிப்பு, வருகைப் பதிவு, தமிழ்/ஆங்கில AI, குரல் உள்ளீடு மற்றும் பதிலை வாசித்தல் ஆகியவை உள்ளன.";
+            if (!containsAny(topic, "attendance", "present", "absent", "வருக", "விடுப்பு"))
+                return note + "இப்போது நான் உள்ளூர் முறையில் இயங்குகிறேன். வருகைப் பதிவு, ஊழியர்கள், சுயவிவரம் அல்லது project அம்சங்கள் பற்றி கேளுங்கள்.";
+            return note
                     + "**" + month + " வருகைப் பதிவு சுருக்கம்**\n\n"
                     + "- வருகை: " + present + "\n- வரவில்லை: " + absent
                     + "\n- அரை நாள்: " + halfDay + "\n- விடுமுறை: " + holiday
                     + "\n- மொத்த பதிவுகள்: " + records + "\n- பணிநேர நிமிடங்கள்: " + minutes;
         }
-        return "*Offline fallback: Gemini is unavailable, so this answer uses the local attendance data.*\n\n"
+        String note = "*Offline fallback: Gemini is unavailable, so a safe local answer is being used.*\n\n";
+        if (containsAny(topic, "salary", "payroll", "payslip"))
+            return note + "Payroll and payslips are not included in this simplified mini-project version.";
+        if (containsAny(topic, "employee", "staff", "team"))
+            return note + "**Employee summary**\n\nTotal employees: " + employees
+                    + "\n\nOpen the **Employees** page to view and manage individual records.";
+        if (containsAny(topic, "profile", "photo", "details"))
+            return note + "An administrator can open an employee from the **Employees** page to manage profile details and the locally stored photo.";
+        if (containsAny(topic, "help", "feature", "what can"))
+            return note + "This system supports employee profiles, local photo storage, attendance, Tamil/English AI, voice input and spoken answers.";
+        if (!containsAny(topic, "attendance", "present", "absent", "leave"))
+            return note + "I am currently running locally. Ask me about attendance, employees, profiles or the project's available features.";
+        return note
                 + "**Attendance overview for " + month + "**\n\n"
                 + "- Present: " + present + "\n- Absent: " + absent
                 + "\n- Half day: " + halfDay + "\n- Holiday: " + holiday
                 + "\n- Total records: " + records + "\n- Worked minutes: " + minutes;
+    }
+
+    private boolean containsAny(String text, String... words) {
+        return Arrays.stream(words).anyMatch(text::contains);
     }
 }
