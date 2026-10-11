@@ -57,7 +57,6 @@ export default function LoginPage() {
           <ArrowRight size={18} />
         </button>
       </form>
-      <Link className="text-link auth-reset" to="/forgot-password">Forgot password?</Link>
       <p className="auth-help">Need login details? Contact your administrator.</p>
     </section>
     <span className="auth-byline">By Arun</span>
